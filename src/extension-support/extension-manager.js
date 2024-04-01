@@ -2,12 +2,14 @@ const dispatch = require('../dispatch/central-dispatch');
 const log = require('../util/log');
 const maybeFormatMessage = require('../util/maybe-format-message');
 const BlockType = require('./block-type');
+/** BEGIN PRG Additions */
 const { tryInitExtension, tryGetExtensionConstructorFromBundle, tryGetAuxiliaryObjectFromLoadedBundle } = require('./prg/bundle-loader');
 
 const tryRetrieveExtensionConstructor = async (extensionId) =>
     await extensionId in builtinExtensions
         ? builtinExtensions[extensionId]()
         : tryGetExtensionConstructorFromBundle(extensionId);
+/** END PRG Additions */
 
 // These extensions are currently built into the VM repository but should not be loaded at startup.
 // TODO: move these out into a separate repository?
@@ -23,16 +25,18 @@ const builtinExtensions = {
     music: () => require('../extensions/scratch3_music'),
     microbit: () => require('../extensions/scratch3_microbit'),
     text2speech: () => require('../extensions/scratch3_text2speech'),
-    speech2text: () => require('../extensions/scratch3_speech2text'),
     translate: () => require('../extensions/scratch3_translate'),
     videoSensing: () => require('../extensions/scratch3_video_sensing'),
     ev3: () => require('../extensions/scratch3_ev3'),
     makeymakey: () => require('../extensions/scratch3_makeymakey'),
     boost: () => require('../extensions/scratch3_boost'),
     gdxfor: () => require('../extensions/scratch3_gdx_for'),
+    /** BEGIN PRG Additions */
+    speech2text: () => require('../extensions/scratch3_speech2text'),
     arduinoRobot: () => require('../extensions/scratch3_arduinobot'),
     gizmoRobot: () => require('../extensions/scratch3_gizmo'),
     microbitRobot: () => require('../extensions/scratch3_microbot'),
+    /** END PRG Additions */
 };
 
 /**
@@ -166,10 +170,10 @@ class ExtensionManager {
 
         return new Promise((resolve, reject) => {
             // If we `require` this at the global level it breaks non-webpack targets, including tests
-            const ExtensionWorker = require('worker-loader?name=extension-worker.js!./extension-worker');
+            const worker = new Worker('./extension-worker.js');
 
             this.pendingExtensions.push({ extensionURL, resolve, reject });
-            dispatch.addWorker(new ExtensionWorker());
+            dispatch.addWorker(worker);
         });
     }
 
@@ -245,9 +249,8 @@ class ExtensionManager {
      */
     _registerInternalExtension(extensionObject) {
         const extensionInfo = extensionObject.getInfo();
-        const { id } = extensionInfo;
         const fakeWorkerId = this.nextExtensionWorker++;
-        const serviceName = `extension_${fakeWorkerId}_${id}`;
+        const serviceName = `extension_${fakeWorkerId}_${extensionInfo.id}`;
         dispatch.setServiceSync(serviceName, extensionObject);
         dispatch.callSync('extensions', 'registerExtensionServiceSync', serviceName);
         return serviceName;
@@ -364,9 +367,12 @@ class ExtensionManager {
 
         // TODO: Fix this to use dispatch.call when extensions are running in workers.
         const menuFunc = extensionObject[menuItemFunctionName];
+
+        /** BEGIN PRG Additions */
         const menuResult = menuFunc.call(extensionObject, editingTargetID);
 
         const menuItems = menuResult.map(
+            /** END PRG Additions */
             item => {
                 item = maybeFormatMessage(item, extensionMessageContext);
                 switch (typeof item) {
