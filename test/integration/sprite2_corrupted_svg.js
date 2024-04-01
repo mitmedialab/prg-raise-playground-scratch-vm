@@ -17,8 +17,6 @@ const {extractAsset, readFileToBuffer} = require('../fixtures/readProjectFile');
 const VirtualMachine = require('../../src/index');
 const {serializeCostumes} = require('../../src/serialization/serialize-assets');
 
-require("../helper/defineWindowGlobals");
-
 const projectUri = path.resolve(__dirname, '../fixtures/default.sb3');
 const project = readFileToBuffer(projectUri);
 
@@ -41,6 +39,14 @@ global.Image = function () {
     return image;
 };
 
+global.document = {
+    createElement: () => ({
+        // Create mock canvas
+        getContext: () => ({
+            drawImage: () => ({})
+        })
+    })
+};
 
 let vm;
 let defaultVectorAssetId;

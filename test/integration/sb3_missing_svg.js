@@ -14,8 +14,6 @@ const readFileToBuffer = require('../fixtures/readProjectFile').readFileToBuffer
 const VirtualMachine = require('../../src/index');
 const {serializeCostumes} = require('../../src/serialization/serialize-assets');
 
-require("../helper/defineWindowGlobals");
-
 const projectUri = path.resolve(__dirname, '../fixtures/missing_svg.sb3');
 const project = readFileToBuffer(projectUri);
 

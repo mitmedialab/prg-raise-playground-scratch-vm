@@ -5,7 +5,6 @@ const VirtualMachine = require('../../src/virtual-machine');
 const Runtime = require('../../src/engine/runtime');
 const MonitorRecord = require('../../src/engine/monitor-record');
 const {Map} = require('immutable');
-require("../helper/defineWindowGlobals");
 
 const test = tap.test;
 

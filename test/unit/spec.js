@@ -1,6 +1,5 @@
 const test = require('tap').test;
 const VirtualMachine = require('../../src/index');
-require("../helper/defineWindowGlobals");
 
 test('interface', t => {
     const vm = new VirtualMachine();
