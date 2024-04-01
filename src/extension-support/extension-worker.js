@@ -6,7 +6,7 @@ const dispatch = require('../dispatch/worker-dispatch');
 const TargetType = require('../extension-support/target-type');
 
 class ExtensionWorker {
-    constructor() {
+    constructor () {
         this.nextExtensionId = 0;
 
         this.initialRegistrations = [];
@@ -15,6 +15,7 @@ class ExtensionWorker {
             dispatch.call('extensions', 'allocateWorker').then(x => {
                 const [id, extension] = x;
                 this.workerId = id;
+
                 try {
                     importScripts(extension);
 
@@ -31,7 +32,7 @@ class ExtensionWorker {
         this.extensions = [];
     }
 
-    register(extensionObject) {
+    register (extensionObject) {
         const extensionId = this.nextExtensionId++;
         this.extensions.push(extensionObject);
         const serviceName = `extension.${this.workerId}.${extensionId}`;
