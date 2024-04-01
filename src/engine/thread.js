@@ -139,7 +139,7 @@ class Thread {
 
         /**
          * Stack frames for the thread. Store metadata for the executing blocks.
-         * @type {Array<_StackFrame>}
+         * @type {Array.<_StackFrame>}
          */
         this.stackFrames = [];
 
@@ -353,7 +353,7 @@ class Thread {
             if (frame.params === null) {
                 continue;
             }
-            if (frame.params.hasOwnProperty(paramName)) {
+            if (Object.prototype.hasOwnProperty.call(frame.params, paramName)) {
                 return frame.params[paramName];
             }
             return null;
