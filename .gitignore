@@ -1,3 +1,6 @@
+# Typescript declaration files (which are generated)
+**/*.d.ts
+
 # Mac OS
 .DS_Store
 
