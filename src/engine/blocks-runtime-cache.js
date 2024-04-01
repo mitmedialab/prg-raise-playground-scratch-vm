@@ -9,11 +9,11 @@
 
 /**
  * A set of cached data about the top block of a script.
- * @param {Blocks} container - Container holding the block and related data
+ * @param {import("./blocks")} container - Container holding the block and related data
  * @param {string} blockId - Id for whose block data is cached in this instance
  */
 class RuntimeScriptCache {
-    constructor (container, blockId) {
+    constructor(container, blockId) {
         /**
          * Container with block data for blockId.
          * @type {import("./blocks")}
@@ -44,7 +44,7 @@ class RuntimeScriptCache {
         if (Object.keys(fields).length === 0) {
             const inputs = container.getInputs(block);
             for (const input in inputs) {
-                if (!inputs.hasOwnProperty(input)) continue;
+                if (!Object.prototype.hasOwnProperty.call(inputs, input)) continue;
                 const id = inputs[input].block;
                 const inputBlock = container.getBlock(id);
                 const inputFields = container.getFields(inputBlock);

@@ -4,7 +4,9 @@ const log = require('../util/log');
 const Thread = require('./thread');
 const { Map } = require('immutable');
 const cast = require('../util/cast');
+/** PRG ADDITION BEGIN */
 const { blockIDKey } = require("../dist/globals");
+/** PRG ADDITION END */
 
 /**
  * Single BlockUtility instance reused by execute for every pritimive ran.
@@ -269,13 +271,6 @@ class BlockCached {
         this._parentValues = null;
 
         /**
-         * A sequence of shadow value operations that can be performed in any
-         * order and are easier to perform given that they are static.
-         * @type {Array<BlockCached>}
-         */
-        this._shadowOps = [];
-
-        /**
          * A sequence of non-shadow operations that can must be performed. This
          * list recreates the order this block and its children are executed.
          * Since the order is always the same we can safely store that order
@@ -360,7 +355,6 @@ class BlockCached {
                     continue;
                 }
 
-                this._shadowOps.push(...inputCached._shadowOps);
                 this._ops.push(...inputCached._ops);
                 inputCached._parentKey = inputName;
                 inputCached._parentValues = this._argValues;
@@ -375,9 +369,7 @@ class BlockCached {
 
         // The final operation is this block itself. At the top most block is a
         // command block or a block that is being run as a monitor.
-        if (!this._isHat && this._isShadowBlock) {
-            this._shadowOps.push(this);
-        } else if (this._definedBlockFunction) {
+        if (this._definedBlockFunction) {
             this._ops.push(this);
         }
     }
@@ -521,7 +513,10 @@ const execute = function (sequencer, thread) {
 
         // Inputs are set during previous steps in the loop.
 
+        /** PRG ADDITION BEGIN */
         blockUtility[blockIDKey] = opCached.id;
+        /** PRG ADDITION END */
+
         const primitiveReportedValue = blockFunction(argValues, blockUtility);
 
         // If it's a promise, wait until promise resolves.
