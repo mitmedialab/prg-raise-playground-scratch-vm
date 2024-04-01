@@ -52,6 +52,7 @@ const SensingSubject = {
 /**
  * States the video sensing activity can be set to.
  * @readonly
+ * @enum {string}
  */
 const VideoState = {
     /** Video turned off. */
@@ -166,7 +167,6 @@ class Scratch3VideoSensingBlocks {
         if (stage) {
             stage.videoTransparency = transparency;
         }
-        return transparency;
     }
 
     /**
@@ -190,7 +190,6 @@ class Scratch3VideoSensingBlocks {
         if (stage) {
             stage.videoState = state;
         }
-        return state;
     }
 
     /**
