@@ -17,9 +17,9 @@ const MathUtil = require('../util/math-util');
 const StringUtil = require('../util/string-util');
 const VariableUtil = require('../util/variable-util');
 
-const {loadCostume} = require('../import/load-costume.js');
-const {loadSound} = require('../import/load-sound.js');
-const {deserializeCostume, deserializeSound} = require('./deserialize-assets.js');
+const { loadCostume } = require('../import/load-costume.js');
+const { loadSound } = require('../import/load-sound.js');
+const { deserializeCostume, deserializeSound } = require('./deserialize-assets.js');
 
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 
@@ -330,8 +330,7 @@ const serializeBlocks = function (blocks) {
         // they would have been compressed in the last pass)
         if (Array.isArray(serializedBlock) &&
             [VAR_PRIMITIVE, LIST_PRIMITIVE].indexOf(serializedBlock[0]) < 0) {
-            log.warn(`Found an unexpected top level primitive with block ID: ${
-                blockID}; deleting it from serialized blocks.`);
+            log.warn(`Found an unexpected top level primitive with block ID: ${blockID}; deleting it from serialized blocks.`);
             delete obj[blockID];
         }
     }
@@ -538,9 +537,12 @@ const serializeMonitors = function (monitors) {
  * Serializes the specified VM runtime.
  * @param {!Runtime} runtime VM runtime instance to be serialized.
  * @param {string=} targetId Optional target id if serializing only a single target
+ * PRG ADDITION BEGIN
+ * @param {import("../extension-support/extension-manager")} extensionManager Reference to VM's extension manager.
+ * PRG ADDITION END
  * @return {object} Serialized runtime instance.
  */
-const serialize = function (runtime, targetId) {
+const serialize = function (runtime, targetId, /* PRG ADDITION BEGIN */ extensionManager /* PRG ADDITION END */) {
     // Fetch targets
     const obj = Object.create(null);
     // Create extension set to hold extension ids found while serializing targets
@@ -572,8 +574,20 @@ const serialize = function (runtime, targetId) {
 
     obj.monitors = serializeMonitors(runtime.getMonitorState());
 
+    /* PRG ADDITION BEGIN */
+    extensionManager.getLoadedExtensionIDs().forEach(id => {
+        const instance = extensionManager.getExtensionInstance(id);
+        instance["save"]?.(obj, extensions);
+    });
+    /* PRG ADDITION END */
+
     // Assemble extension list
     obj.extensions = Array.from(extensions);
+
+    /* PRG ADDITION BEGIN */
+    // Save training data for the text classifier model
+    obj.textModel = runtime.modelData ? runtime.modelData.classifierData : undefined;
+    /* PRG ADDITION END */
 
     // Assemble metadata
     const meta = Object.create(null);
@@ -613,134 +627,134 @@ const deserializeInputDesc = function (inputDescOrId, parentId, isShadow, blocks
     primitiveObj.inputs = Object.create(null);
     // need a reference to parent id
     switch (inputDescOrId[0]) {
-    case MATH_NUM_PRIMITIVE: {
-        primitiveObj.opcode = 'math_number';
-        primitiveObj.fields = {
-            NUM: {
-                name: 'NUM',
-                value: inputDescOrId[1]
-            }
-        };
-        primitiveObj.topLevel = false;
-        break;
-    }
-    case POSITIVE_NUM_PRIMITIVE: {
-        primitiveObj.opcode = 'math_positive_number';
-        primitiveObj.fields = {
-            NUM: {
-                name: 'NUM',
-                value: inputDescOrId[1]
-            }
-        };
-        primitiveObj.topLevel = false;
-        break;
-    }
-    case WHOLE_NUM_PRIMITIVE: {
-        primitiveObj.opcode = 'math_whole_number';
-        primitiveObj.fields = {
-            NUM: {
-                name: 'NUM',
-                value: inputDescOrId[1]
-            }
-        };
-        primitiveObj.topLevel = false;
-        break;
-    }
-    case INTEGER_NUM_PRIMITIVE: {
-        primitiveObj.opcode = 'math_integer';
-        primitiveObj.fields = {
-            NUM: {
-                name: 'NUM',
-                value: inputDescOrId[1]
-            }
-        };
-        primitiveObj.topLevel = false;
-        break;
-    }
-    case ANGLE_NUM_PRIMITIVE: {
-        primitiveObj.opcode = 'math_angle';
-        primitiveObj.fields = {
-            NUM: {
-                name: 'NUM',
-                value: inputDescOrId[1]
-            }
-        };
-        primitiveObj.topLevel = false;
-        break;
-    }
-    case COLOR_PICKER_PRIMITIVE: {
-        primitiveObj.opcode = 'colour_picker';
-        primitiveObj.fields = {
-            COLOUR: {
-                name: 'COLOUR',
-                value: inputDescOrId[1]
-            }
-        };
-        primitiveObj.topLevel = false;
-        break;
-    }
-    case TEXT_PRIMITIVE: {
-        primitiveObj.opcode = 'text';
-        primitiveObj.fields = {
-            TEXT: {
-                name: 'TEXT',
-                value: inputDescOrId[1]
-            }
-        };
-        primitiveObj.topLevel = false;
-        break;
-    }
-    case BROADCAST_PRIMITIVE: {
-        primitiveObj.opcode = 'event_broadcast_menu';
-        primitiveObj.fields = {
-            BROADCAST_OPTION: {
-                name: 'BROADCAST_OPTION',
-                value: inputDescOrId[1],
-                id: inputDescOrId[2],
-                variableType: Variable.BROADCAST_MESSAGE_TYPE
-            }
-        };
-        primitiveObj.topLevel = false;
-        break;
-    }
-    case VAR_PRIMITIVE: {
-        primitiveObj.opcode = 'data_variable';
-        primitiveObj.fields = {
-            VARIABLE: {
-                name: 'VARIABLE',
-                value: inputDescOrId[1],
-                id: inputDescOrId[2],
-                variableType: Variable.SCALAR_TYPE
-            }
-        };
-        if (inputDescOrId.length > 3) {
-            primitiveObj.topLevel = true;
-            primitiveObj.x = inputDescOrId[3];
-            primitiveObj.y = inputDescOrId[4];
+        case MATH_NUM_PRIMITIVE: {
+            primitiveObj.opcode = 'math_number';
+            primitiveObj.fields = {
+                NUM: {
+                    name: 'NUM',
+                    value: inputDescOrId[1]
+                }
+            };
+            primitiveObj.topLevel = false;
+            break;
         }
-        break;
-    }
-    case LIST_PRIMITIVE: {
-        primitiveObj.opcode = 'data_listcontents';
-        primitiveObj.fields = {
-            LIST: {
-                name: 'LIST',
-                value: inputDescOrId[1],
-                id: inputDescOrId[2],
-                variableType: Variable.LIST_TYPE
-            }
-        };
-        if (inputDescOrId.length > 3) {
-            primitiveObj.topLevel = true;
-            primitiveObj.x = inputDescOrId[3];
-            primitiveObj.y = inputDescOrId[4];
+        case POSITIVE_NUM_PRIMITIVE: {
+            primitiveObj.opcode = 'math_positive_number';
+            primitiveObj.fields = {
+                NUM: {
+                    name: 'NUM',
+                    value: inputDescOrId[1]
+                }
+            };
+            primitiveObj.topLevel = false;
+            break;
         }
-        break;
-    }
-    default: {
-        log.error(`Found unknown primitive type during deserialization: ${JSON.stringify(inputDescOrId)}`);
-        return null;
-    }
+        case WHOLE_NUM_PRIMITIVE: {
+            primitiveObj.opcode = 'math_whole_number';
+            primitiveObj.fields = {
+                NUM: {
+                    name: 'NUM',
+                    value: inputDescOrId[1]
+                }
+            };
+            primitiveObj.topLevel = false;
+            break;
+        }
+        case INTEGER_NUM_PRIMITIVE: {
+            primitiveObj.opcode = 'math_integer';
+            primitiveObj.fields = {
+                NUM: {
+                    name: 'NUM',
+                    value: inputDescOrId[1]
+                }
+            };
+            primitiveObj.topLevel = false;
+            break;
+        }
+        case ANGLE_NUM_PRIMITIVE: {
+            primitiveObj.opcode = 'math_angle';
+            primitiveObj.fields = {
+                NUM: {
+                    name: 'NUM',
+                    value: inputDescOrId[1]
+                }
+            };
+            primitiveObj.topLevel = false;
+            break;
+        }
+        case COLOR_PICKER_PRIMITIVE: {
+            primitiveObj.opcode = 'colour_picker';
+            primitiveObj.fields = {
+                COLOUR: {
+                    name: 'COLOUR',
+                    value: inputDescOrId[1]
+                }
+            };
+            primitiveObj.topLevel = false;
+            break;
+        }
+        case TEXT_PRIMITIVE: {
+            primitiveObj.opcode = 'text';
+            primitiveObj.fields = {
+                TEXT: {
+                    name: 'TEXT',
+                    value: inputDescOrId[1]
+                }
+            };
+            primitiveObj.topLevel = false;
+            break;
+        }
+        case BROADCAST_PRIMITIVE: {
+            primitiveObj.opcode = 'event_broadcast_menu';
+            primitiveObj.fields = {
+                BROADCAST_OPTION: {
+                    name: 'BROADCAST_OPTION',
+                    value: inputDescOrId[1],
+                    id: inputDescOrId[2],
+                    variableType: Variable.BROADCAST_MESSAGE_TYPE
+                }
+            };
+            primitiveObj.topLevel = false;
+            break;
+        }
+        case VAR_PRIMITIVE: {
+            primitiveObj.opcode = 'data_variable';
+            primitiveObj.fields = {
+                VARIABLE: {
+                    name: 'VARIABLE',
+                    value: inputDescOrId[1],
+                    id: inputDescOrId[2],
+                    variableType: Variable.SCALAR_TYPE
+                }
+            };
+            if (inputDescOrId.length > 3) {
+                primitiveObj.topLevel = true;
+                primitiveObj.x = inputDescOrId[3];
+                primitiveObj.y = inputDescOrId[4];
+            }
+            break;
+        }
+        case LIST_PRIMITIVE: {
+            primitiveObj.opcode = 'data_listcontents';
+            primitiveObj.fields = {
+                LIST: {
+                    name: 'LIST',
+                    value: inputDescOrId[1],
+                    id: inputDescOrId[2],
+                    variableType: Variable.LIST_TYPE
+                }
+            };
+            if (inputDescOrId.length > 3) {
+                primitiveObj.topLevel = true;
+                primitiveObj.x = inputDescOrId[3];
+                primitiveObj.y = inputDescOrId[4];
+            }
+            break;
+        }
+        default: {
+            log.error(`Found unknown primitive type during deserialization: ${JSON.stringify(inputDescOrId)}`);
+            return null;
+        }
     }
     blocks[newId] = primitiveObj;
     return newId;
@@ -975,9 +989,9 @@ const parseScratchObject = function (object, runtime, extensions, zip, assets) {
         }
     }
     // Costumes from JSON.
-    const {costumePromises} = assets;
+    const { costumePromises } = assets;
     // Sounds from JSON
-    const {soundBank, soundPromises} = assets;
+    const { soundBank, soundPromises } = assets;
     // Create the first clone, and load its run-state from JSON.
     const target = sprite.createClone(object.isStage ? StageLayering.BACKGROUND_LAYER : StageLayering.SPRITE_LAYER);
     // Load target properties from JSON.
@@ -1116,8 +1130,7 @@ const deserializeMonitor = function (monitorData, runtime, targets, extensions) 
         if (filteredTargets && filteredTargets.length > 0) {
             monitorData.targetId = filteredTargets[0].id;
         } else {
-            log.warn(`Tried to deserialize sprite specific monitor ${
-                monitorData.opcode} but could not find sprite ${monitorData.spriteName}.`);
+            log.warn(`Tried to deserialize sprite specific monitor ${monitorData.opcode} but could not find sprite ${monitorData.spriteName}.`);
         }
     }
 
@@ -1258,6 +1271,25 @@ const deserialize = function (json, runtime, zip, isSingleSprite) {
         extensionURLs: new Map()
     };
 
+    /* PRG ADDITION BEGIN */
+    json["extensions"]?.forEach(id => extensions.extensionIDs.add(id));
+
+    // Unpack the data for the text model
+    runtime.modelData = { "textData": {}, "classifierData": {}, "nextLabelNumber": 1 };
+    if (json.hasOwnProperty("textModel")) {
+        // RANDI should make sure this works
+        for (let label of Object.keys(json.textModel)) {
+            runtime.modelData.textData[label] = [];
+            runtime.modelData.classifierData[label] = [];
+            runtime.modelData.nextLabelNumber++;
+            for (let example of json.textModel[label]) {
+                runtime.modelData.textData[label].push(example);
+                runtime.modelData.classifierData[label].push(example);
+            }
+        }
+    }
+    /* PRG ADDITION END */
+
     // Store the origin field (e.g. project originated at CSFirst) so that we can save it again.
     if (json.meta && json.meta.origin) {
         runtime.origin = json.meta.origin;
@@ -1270,7 +1302,7 @@ const deserialize = function (json, runtime, zip, isSingleSprite) {
     // so that their corresponding render drawables can be created in
     // their layer order (e.g. back to front)
     const targetObjects = ((isSingleSprite ? [json] : json.targets) || [])
-        .map((t, i) => Object.assign(t, {targetPaneOrder: i}))
+        .map((t, i) => Object.assign(t, { targetPaneOrder: i }))
         .sort((a, b) => a.layerOrder - b.layerOrder);
 
     const monitorObjects = json.monitors || [];
