@@ -52,7 +52,9 @@ const auxiliarObjects = new Map();
 
 const untilScriptLoaded = (endpoint, { onLoad, onError }) => {
   var scriptTag = document.createElement('script');
-  scriptTag.src = `${location.href.split("?")[0]}/static/${endpoint}`;
+  var host = location.href.split("?")[0];
+  host = host.endsWith("/") ? host.slice(0, -1) : host;
+  scriptTag.src = `${host}/static/${endpoint}`;
   return new Promise((resolve, reject) => {
     scriptTag.onload = () => resolve(onLoad());
     scriptTag.onerror = () => reject(onError())
