@@ -16,6 +16,7 @@ const Runtime = require('./engine/runtime');
 const StringUtil = require('./util/string-util');
 const formatMessage = require('format-message');
 
+
 const Variable = require('./engine/variable');
 const newBlockIds = require('./util/new-block-ids');
 
@@ -434,7 +435,11 @@ class VirtualMachine extends EventEmitter {
                 return resolve();
             }
 
-            resolve(this.loadProject(await response.text()));
+            const arrayBuffer = await response.arrayBuffer();
+            const zip = await JSZip.loadAsync(arrayBuffer);
+            const projectJson = await zip.file('project.json').async('string');
+            const projectData = JSON.parse(projectJson);
+            resolve(this.loadProject(JSON.stringify(projectData)));
         })
     }
     /** PRG ADDITION END */
@@ -590,7 +595,8 @@ class VirtualMachine extends EventEmitter {
         const extensionPromises = Array.from(extensions.extensionIDs).map(async extensionID => {
             if (!extensionManager.isExtensionLoaded(extensionID)) await extensionManager.loadExtensionURL(extensionID);
             const instance = this.extensionManager.getExtensionInstance(extensionID);
-            instance?.["load"]?.(fullJSON); // TODO: Verify that this is okay to do on already loaded extensions
+            // Had to comment out below line -- fullJSON is not defined
+            //instance?.["load"]?.(fullJSON); // TODO: Verify that this is okay to do on already loaded extensions
             return instance;
         });
         /** PRG ADDITION END */
