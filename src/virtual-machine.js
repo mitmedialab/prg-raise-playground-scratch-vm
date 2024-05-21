@@ -577,7 +577,7 @@ class VirtualMachine extends EventEmitter {
                     performance.measure('scratch-vm-deserialize',
                         'scratch-vm-deserialize-start', 'scratch-vm-deserialize-end');
                 }
-                return this.installTargets(targets, extensions, true);
+                return this.installTargets(targets, extensions, true, projectJSON);
             });
     }
 
@@ -588,7 +588,7 @@ class VirtualMachine extends EventEmitter {
      * @param {boolean} wholeProject - set to true if installing a whole project, as opposed to a single sprite.
      * @returns {Promise} resolved once targets have been installed
      */
-    installTargets(targets, extensions, wholeProject) {
+    installTargets(targets, extensions, wholeProject, fullJSON) {
 
         /** PRG ADDITION BEGIN */
         const { extensionManager } = this;
@@ -596,7 +596,7 @@ class VirtualMachine extends EventEmitter {
             if (!extensionManager.isExtensionLoaded(extensionID)) await extensionManager.loadExtensionURL(extensionID);
             const instance = this.extensionManager.getExtensionInstance(extensionID);
             // Had to comment out below line -- fullJSON is not defined
-            //instance?.["load"]?.(fullJSON); // TODO: Verify that this is okay to do on already loaded extensions
+            instance?.["load"]?.(fullJSON); // TODO: Verify that this is okay to do on already loaded extensions
             return instance;
         });
         /** PRG ADDITION END */
