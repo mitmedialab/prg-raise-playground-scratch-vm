@@ -595,7 +595,6 @@ class VirtualMachine extends EventEmitter {
         const extensionPromises = Array.from(extensions.extensionIDs).map(async extensionID => {
             if (!extensionManager.isExtensionLoaded(extensionID)) await extensionManager.loadExtensionURL(extensionID);
             const instance = this.extensionManager.getExtensionInstance(extensionID);
-            // Had to comment out below line -- fullJSON is not defined
             instance?.["load"]?.(fullJSON); // TODO: Verify that this is okay to do on already loaded extensions
             return instance;
         });
