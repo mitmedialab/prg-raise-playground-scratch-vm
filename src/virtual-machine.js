@@ -16,6 +16,7 @@ const Runtime = require('./engine/runtime');
 const StringUtil = require('./util/string-util');
 const formatMessage = require('format-message');
 
+
 const Variable = require('./engine/variable');
 const newBlockIds = require('./util/new-block-ids');
 
@@ -434,7 +435,7 @@ class VirtualMachine extends EventEmitter {
                 return resolve();
             }
 
-            resolve(this.loadProject(await response.text()));
+            resolve(this.loadProject(await response.arrayBuffer()));
         })
     }
     /** PRG ADDITION END */
@@ -572,7 +573,7 @@ class VirtualMachine extends EventEmitter {
                     performance.measure('scratch-vm-deserialize',
                         'scratch-vm-deserialize-start', 'scratch-vm-deserialize-end');
                 }
-                return this.installTargets(targets, extensions, true);
+                return this.installTargets(targets, extensions, true, projectJSON);
             });
     }
 
@@ -583,7 +584,7 @@ class VirtualMachine extends EventEmitter {
      * @param {boolean} wholeProject - set to true if installing a whole project, as opposed to a single sprite.
      * @returns {Promise} resolved once targets have been installed
      */
-    installTargets(targets, extensions, wholeProject) {
+    installTargets(targets, extensions, wholeProject, fullJSON) {
 
         /** PRG ADDITION BEGIN */
         const { extensionManager } = this;
