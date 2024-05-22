@@ -435,11 +435,7 @@ class VirtualMachine extends EventEmitter {
                 return resolve();
             }
 
-            const arrayBuffer = await response.arrayBuffer();
-            const zip = await JSZip.loadAsync(arrayBuffer);
-            const projectJson = await zip.file('project.json').async('string');
-            const projectData = JSON.parse(projectJson);
-            resolve(this.loadProject(JSON.stringify(projectData)));
+            resolve(this.loadProject(await response.arrayBuffer()));
         })
     }
     /** PRG ADDITION END */
