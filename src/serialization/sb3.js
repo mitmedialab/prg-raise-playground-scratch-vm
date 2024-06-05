@@ -16,13 +16,10 @@ const uid = require('../util/uid');
 const MathUtil = require('../util/math-util');
 const StringUtil = require('../util/string-util');
 const VariableUtil = require('../util/variable-util');
-const ExtensionManager = require('../../src/extension-support/extension-manager')
 
 const { loadCostume } = require('../import/load-costume.js');
 const { loadSound } = require('../import/load-sound.js');
 const { deserializeCostume, deserializeSound } = require('./deserialize-assets.js');
-
-const versionPath = '../../../../versions/versions.json';
 
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 
@@ -975,6 +972,7 @@ const parseScratchAssets = function (object, runtime, zip) {
     return assets;
 };
 
+// HELPER FUNCTION TO UPDATE VARIABLES ON RE-ORDERING
 const updateDictionary = function(originalDict, keyMapping) {
     const updatedDict = {};
     for (const [oldKey, newKey] of Object.entries(keyMapping)) {
@@ -987,6 +985,7 @@ const updateDictionary = function(originalDict, keyMapping) {
     return updatedDict;
 }
 
+// REMOVING STATIC IMAGE ENTRIES FROM DICTIONARIES
 const removeImageEntries = function(dict) {
     const filteredDict = {};
 
@@ -999,6 +998,8 @@ const removeImageEntries = function(dict) {
     return filteredDict;
 }
 
+
+// FUNCTION TO GATHER INPUTS
 const gatherInputs = function(blocks, blockJSON) {
     var inputs = {};
     var variables = {};
@@ -1025,6 +1026,7 @@ const gatherInputs = function(blocks, blockJSON) {
     return { inputs, variables };
 }
 
+// FUNCTION TO GATHER FIELDS
 const gatherFields = function(blockJSON, argList) {
     var fields = {};
     if (blockJSON.fields && Object.keys(blockJSON.fields).length > 0) {
@@ -1042,6 +1044,7 @@ const gatherFields = function(blockJSON, argList) {
     return fields;
 }
 
+// FUNCTION TO CREATE INPUT BLOCKS
 const createInputBlock = function (blocks, type, value, parentId, blockLib) {
     value = String(value);
     const primitiveObj = Object.create(null);
@@ -1107,6 +1110,7 @@ const createInputBlock = function (blocks, type, value, parentId, blockLib) {
     return newId;
 };
 
+// FUNCTION TO MERGE INPUTS AND FIELDS
 const addInputsAndFields = function(inputs, fields, argList) {
     var total = [];
 
@@ -1120,10 +1124,10 @@ const addInputsAndFields = function(inputs, fields, argList) {
     return total;
 }
 
+// FUNCTION TO EXTRACT ARGUMENT RE-ORDERING
 const analyzeFunction = function(fn) {
     // Convert function to string and extract parameter names
     const fnStr = fn.toString();
-    console.log(fnStr);
     const paramMatch = fnStr.match(/\(([^)]*)\)/);
     if (!paramMatch) {
         console.log("Invalid function format");
@@ -1192,27 +1196,29 @@ const parseScratchObject = function (object, runtime, extensions, zip, assets, e
         for (const blockId in object.blocks) {
             if (!Object.prototype.hasOwnProperty.call(object.blocks, blockId)) continue;
             const blockJSON = object.blocks[blockId];
-
-            const regex = /_v(\d+)/g;
             let version = 0;
             const blockOpcode = blockJSON.opcode;
-            console.log(blockOpcode);
 
+            // Check if version name is included
+            const regex = /_v(\d+)/g;
             const matches = blockOpcode.match(regex); // Get all matches
 
             if (matches) {
-                const lastMatch = matches[matches.length - 1]; // Get the last match
-                const versionMatch = lastMatch.match(/_v(\d+)/); // Extract the version number from the last match
+                const lastMatch = matches[matches.length - 1]; 
+                const versionMatch = lastMatch.match(/_v(\d+)/); 
 
                 if (versionMatch) {
                     version = parseInt(versionMatch[1], 10); // Extract and parse the version number
                 }
                 blockJSON.opcode = blockOpcode.replace(regex, ""); // Remove all version numbers from the opcode
             }
-            console.log('next');
+
             const extensionID = getExtensionIdForOpcode(blockJSON.opcode);
             const menuRegex = /menu_\d+/g;
+
+            // Make sure the block is one that can't be versioned
             if (extensionID && !Object.keys(primitiveOpcodeInfoMap).includes(blockJSON.opcode) && !menuRegex.test(blockJSON.opcode)) {
+                // Collect block version information for extension
                 const instance = extensionManager.getExtensionInstance(extensionID);
                 var extensionBlocks = instance.info.blocks;
                 extensionBlocks = extensionBlocks.reduce((acc, tempBlock) => {
@@ -1220,30 +1226,24 @@ const parseScratchObject = function (object, runtime, extensions, zip, assets, e
                     return acc;
                 }, {});
                 var blockInfoIndex = blockJSON.opcode;
-                if (!Object.keys(primitiveOpcodeInfoMap).includes(blockJSON.opcode)) {
-                    blockInfoIndex = blockJSON.opcode.replace(`${blockJSON.opcode.split("_")[0]}_`, "");
-                }
-                console.log(blockInfoIndex);
-                console.log(extensionBlocks);
+                blockInfoIndex = blockJSON.opcode.replace(`${blockJSON.opcode.split("_")[0]}_`, "");
                 const versionList = extensionBlocks[blockInfoIndex].versions;
-                console.log(typeof versionList);
-                console.log(Object.keys(versionList));
+                // Make sure version functions exist
                 if (versionList != [] && version < Object.keys(versionList).length) {
-                    console.log("next2");
+                    // Delete static images
                     const blockArgs = removeImageEntries(extensionBlocks[blockInfoIndex].arguments);
-                    
+                    // Gather arguments and variable positions
                     var { inputs, variables } = gatherInputs(object.blocks, blockJSON);
                     var fields = gatherFields(blockJSON, blockArgs);
                     var totalList = addInputsAndFields(inputs, fields, blockArgs);
                     const newInputs = {};
                     const newFields = {};
-                    
-                    console.log(totalList);
+                    // Update arguments for each version and re-order variables if necessary
                     for (let i = version; i < Object.keys(versionList).length; i++) {
                         totalList = versionList[i](...totalList);
                         variables = updateDictionary(variables, analyzeFunction(versionList[i]));
                     }
-                    console.log(totalList)
+                    // Place new arguments in their respective input/field entries
                     for (let i = 0; i < Object.keys(blockArgs).length; i++) {
                         const argIndex = Object.keys(blockArgs)[i];
                         if (Object.keys(variables).includes(argIndex)) {
@@ -1269,14 +1269,9 @@ const parseScratchObject = function (object, runtime, extensions, zip, assets, e
                         }
                         
                     }
-                    // for (let i = 0; i < Object.keys(blockJSON.inputs).length; i++) {
-                    //     delete object.blocks[blockJSON.inputs[i].block];
-                    // }
-                    console.log("newInputs");
+                    // Re-assign fields and inputs
                     blockJSON.inputs = newInputs;
                     blockJSON.fields = newFields;
-                    console.log("FINAL BLOCK");
-                    console.log(blockJSON);
                 }
             }
             
