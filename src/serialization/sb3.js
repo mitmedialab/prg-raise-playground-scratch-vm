@@ -16,10 +16,13 @@ const uid = require('../util/uid');
 const MathUtil = require('../util/math-util');
 const StringUtil = require('../util/string-util');
 const VariableUtil = require('../util/variable-util');
+const ExtensionManager = require('../../src/extension-support/extension-manager')
 
 const { loadCostume } = require('../import/load-costume.js');
 const { loadSound } = require('../import/load-sound.js');
 const { deserializeCostume, deserializeSound } = require('./deserialize-assets.js');
+
+const versionPath = '../../../../versions/versions.json';
 
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 
@@ -297,16 +300,35 @@ const getExtensionIdForOpcode = function (opcode) {
  * compressed primitives and the list of all extension IDs present
  * in the serialized blocks.
  */
-const serializeBlocks = function (blocks) {
+const serializeBlocks = function (blocks, extensionManager) {
     const obj = Object.create(null);
     const extensionIDs = new Set();
     for (const blockID in blocks) {
         if (!Object.prototype.hasOwnProperty.call(blocks, blockID)) continue;
-        obj[blockID] = serializeBlock(blocks[blockID], blocks);
         const extensionID = getExtensionIdForOpcode(blocks[blockID].opcode);
         if (extensionID) {
             extensionIDs.add(extensionID);
+            const instance = extensionManager.getExtensionInstance(extensionID);
+            var extensionBlocks = instance.info.blocks;
+            extensionBlocks = extensionBlocks.reduce((acc, tempBlock) => {
+                acc[tempBlock.opcode] = tempBlock;
+                return acc;
+            }, {});
+            var blockInfoIndex = blocks[blockID].opcode;
+            if (!Object.keys(primitiveOpcodeInfoMap).includes(blocks[blockID].opcode)) {
+                blockInfoIndex = blocks[blockID].opcode.replace(`${blocks[blockID].opcode.split("_")[0]}_`, "");
+            }
+            const regex = /_v\d+/g; // Matches _v followed by one or more digits
+            blockInfoIndex = blockInfoIndex.replace(regex, ""); // Replaces all matches with an empty string
+            const menuRegex = /menu_\d+/;
+            if (!menuRegex.test(blockInfoIndex)) {
+                const versionList = extensionBlocks[blockInfoIndex].versions;
+                blocks[blockID].opcode = `${blocks[blockID].opcode}_v${Object.keys(versionList).length}`;
+            }
+            
         }
+        obj[blockID] = serializeBlock(blocks[blockID], blocks);
+        console.log(obj[blockID]);
     }
     // once we have completed a first pass, do a second pass on block inputs
     for (const blockID in obj) {
@@ -451,7 +473,7 @@ const serializeComments = function (comments) {
  * @param {Set} extensions A set of extensions to add extension IDs to
  * @return {object} A serialized representation of the given target.
  */
-const serializeTarget = function (target, extensions) {
+const serializeTarget = function (target, extensions, extensionManager) {
     const obj = Object.create(null);
     let targetExtensions = [];
     obj.isStage = target.isStage;
@@ -460,7 +482,7 @@ const serializeTarget = function (target, extensions) {
     obj.variables = vars.variables;
     obj.lists = vars.lists;
     obj.broadcasts = vars.broadcasts;
-    [obj.blocks, targetExtensions] = serializeBlocks(target.blocks);
+    [obj.blocks, targetExtensions] = serializeBlocks(target.blocks, extensionManager);
     obj.comments = serializeComments(target.comments);
 
     // TODO remove this check/patch when (#1901) is fixed
@@ -564,7 +586,7 @@ const serialize = function (runtime, targetId, /* PRG ADDITION BEGIN */ extensio
         });
     }
 
-    const serializedTargets = flattenedOriginalTargets.map(t => serializeTarget(t, extensions));
+    const serializedTargets = flattenedOriginalTargets.map(t => serializeTarget(t, extensions, extensionManager));
 
     if (targetId) {
         return serializedTargets[0];
@@ -577,6 +599,8 @@ const serialize = function (runtime, targetId, /* PRG ADDITION BEGIN */ extensio
     /* PRG ADDITION BEGIN */
     extensionManager.getLoadedExtensionIDs().forEach(id => {
         const instance = extensionManager.getExtensionInstance(id);
+        console.log("EXTENSION INSTABNCE");
+        console.log(instance);
         instance["save"]?.(obj, extensions);
     });
     /* PRG ADDITION END */
@@ -839,12 +863,14 @@ const deserializeFields = function (fields) {
  * @param {object} blocks Serialized SB3 "blocks" property of a target. Will be mutated.
  * @return {object} input is modified and returned
  */
-const deserializeBlocks = function (blocks) {
+const deserializeBlocks = function (blocks, extensionManager) {
     for (const blockId in blocks) {
         if (!Object.prototype.hasOwnProperty.call(blocks, blockId)) {
             continue;
         }
         const block = blocks[blockId];
+        
+    
         if (Array.isArray(block)) {
             // this is one of the primitives
             // delete the old entry in object.blocks and replace it w/the
@@ -854,8 +880,10 @@ const deserializeBlocks = function (blocks) {
             continue;
         }
         block.id = blockId; // add id back to block since it wasn't serialized
+        
         block.inputs = deserializeInputs(block.inputs, blockId, blocks);
         block.fields = deserializeFields(block.fields);
+
     }
     return blocks;
 };
@@ -947,6 +975,191 @@ const parseScratchAssets = function (object, runtime, zip) {
     return assets;
 };
 
+const updateDictionary = function(originalDict, keyMapping) {
+    const updatedDict = {};
+    for (const [oldKey, newKey] of Object.entries(keyMapping)) {
+        if (originalDict.hasOwnProperty(oldKey)) {
+            const newEntry = { ...originalDict[oldKey] };
+            newEntry.name = String(newKey); // Update the name field
+            updatedDict[newKey] = newEntry;
+        }
+    }
+    return updatedDict;
+}
+
+const removeImageEntries = function(dict) {
+    const filteredDict = {};
+
+    for (const [key, value] of Object.entries(dict)) {
+        if (value.type !== 'image') {
+            filteredDict[key] = value;
+        }
+    }
+
+    return filteredDict;
+}
+
+const gatherInputs = function(blocks, blockJSON) {
+    var inputs = {};
+    var variables = {};
+    if (blockJSON.inputs && Object.keys(blockJSON.inputs).length > 0) {
+        Object.keys(blockJSON.inputs).forEach(input => {
+            var keyIndex = input;
+            input = blockJSON.inputs[input];
+            if (blocks[input.block]) {
+                if (Object.keys(primitiveOpcodeInfoMap).includes(blocks[input.block].opcode)) {
+                    const inputBlock = blocks[input.block].fields;
+                    const inputType = Object.keys(blocks[input.block].fields)[0];
+                    var inputValue = inputBlock[inputType].value;
+                    if (inputType == "NUM") {
+                        inputValue = parseFloat(inputValue);
+                    }
+                } else {
+                    variables[keyIndex] = input;
+                    inputValue = "0";
+                }
+                inputs[keyIndex] = inputValue;
+            } 
+        })
+    }
+    return { inputs, variables };
+}
+
+const gatherFields = function(blockJSON, argList) {
+    var fields = {};
+    if (blockJSON.fields && Object.keys(blockJSON.fields).length > 0) {
+        Object.keys(blockJSON.fields).forEach(field => {
+                const keyIndex = field;
+                field = blockJSON.fields[field];
+                var value = field.value;
+                var argType = argList[field.name].type;
+                if (argType == "number" || argType == "angle") {
+                    value = parseFloat(value);
+                }
+                fields[keyIndex] = value;
+        })
+    }
+    return fields;
+}
+
+const createInputBlock = function (blocks, type, value, parentId, blockLib) {
+    value = String(value);
+    const primitiveObj = Object.create(null);
+    const newId = uid();
+    primitiveObj.id = newId;
+    primitiveObj.next = null;
+    primitiveObj.parent = parentId;
+    primitiveObj.shadow = true;
+    primitiveObj.inputs = Object.create(null);
+    // need a reference to parent id
+    switch (type) {
+        case "number": {
+            primitiveObj.opcode = 'math_number';
+            primitiveObj.fields = {
+                NUM: {
+                    name: 'NUM',
+                    value: value
+                }
+            };
+            primitiveObj.topLevel = false;
+            break;
+        }
+        case "angle": {
+            primitiveObj.opcode = 'math_angle';
+            primitiveObj.fields = {
+                NUM: {
+                    name: 'NUM',
+                    value: value
+                }
+            };
+            primitiveObj.topLevel = false;
+            break;
+        }
+        case "color": {
+            primitiveObj.opcode = 'colour_picker';
+            primitiveObj.fields = {
+                COLOUR: {
+                    name: 'COLOUR',
+                    value: value
+                }
+            };
+            primitiveObj.topLevel = false;
+            break;
+        }
+        case "string": {
+            primitiveObj.opcode = 'text';
+            primitiveObj.fields = {
+                TEXT: {
+                    name: 'TEXT',
+                    value: value
+                }
+            };
+            primitiveObj.topLevel = false;
+            break;
+        }
+        default: {
+            log.error(`Found unknown primitive type during deserialization: ${JSON.stringify(inputDescOrId)}`);
+            return null;
+        }
+    }
+    blockLib.createBlock(primitiveObj);
+    blocks[newId] = primitiveObj;
+    return newId;
+};
+
+const addInputsAndFields = function(inputs, fields, argList) {
+    var total = [];
+
+    for (let i = 0; i < Object.keys(argList).length; i++) {
+        if (Object.keys(fields).includes(String(i))) {
+            total.push(fields[i]);
+        } else {
+            total.push(inputs[i]);
+        }
+    }
+    return total;
+}
+
+const analyzeFunction = function(fn) {
+    // Convert function to string and extract parameter names
+    const fnStr = fn.toString();
+    console.log(fnStr);
+    const paramMatch = fnStr.match(/\(([^)]*)\)/);
+    if (!paramMatch) {
+        console.log("Invalid function format");
+        return;
+    }
+
+    const params = paramMatch[1].split(',').map(p => p.trim());
+
+    // Extract the output array from the function body
+    const bodyMatch = fnStr.match(/\[\s*([^\]]*)\s*\]/);
+    if (!bodyMatch) {
+        console.log("Invalid function format");
+        return;
+    }
+
+    const outputArray = bodyMatch[1].split(',').map(p => p.trim());
+
+    // Map the original parameters to their new positions
+    const paramMapping = {};
+    outputArray.forEach((item, index) => {
+        params.forEach(param => {
+            const regex = new RegExp(`\\b${param}\\b`);
+            if (regex.test(item)) {
+                param = params.indexOf(param);
+                paramMapping[param] = index; // Use 1-based indexing for positions
+            }
+        });
+    });
+
+    return paramMapping;
+}
+
+
+
+
+
 /**
  * Parse a single "Scratch object" and create all its in-memory VM objects.
  * @param {!object} object From-JSON "Scratch object:" sprite, stage, watcher.
@@ -957,7 +1170,7 @@ const parseScratchAssets = function (object, runtime, zip) {
  *   into costumes and sounds
  * @return {!Promise.<Target>} Promise for the target created (stage or sprite), or null for unsupported objects.
  */
-const parseScratchObject = function (object, runtime, extensions, zip, assets) {
+const parseScratchObject = function (object, runtime, extensions, zip, assets, extensionManager) {
     if (!Object.prototype.hasOwnProperty.call(object, 'name')) {
         // Watcher/monitor - skip this object until those are implemented in VM.
         // @todo
@@ -974,18 +1187,105 @@ const parseScratchObject = function (object, runtime, extensions, zip, assets) {
         sprite.name = object.name;
     }
     if (Object.prototype.hasOwnProperty.call(object, 'blocks')) {
-        deserializeBlocks(object.blocks);
+        deserializeBlocks(object.blocks, extensionManager);
         // Take a second pass to create objects and add extensions
         for (const blockId in object.blocks) {
             if (!Object.prototype.hasOwnProperty.call(object.blocks, blockId)) continue;
             const blockJSON = object.blocks[blockId];
-            blocks.createBlock(blockJSON);
 
-            // If the block is from an extension, record it.
+            const regex = /_v(\d+)/g;
+            let version = 0;
+            const blockOpcode = blockJSON.opcode;
+            console.log(blockOpcode);
+
+            const matches = blockOpcode.match(regex); // Get all matches
+
+            if (matches) {
+                const lastMatch = matches[matches.length - 1]; // Get the last match
+                const versionMatch = lastMatch.match(/_v(\d+)/); // Extract the version number from the last match
+
+                if (versionMatch) {
+                    version = parseInt(versionMatch[1], 10); // Extract and parse the version number
+                }
+                blockJSON.opcode = blockOpcode.replace(regex, ""); // Remove all version numbers from the opcode
+            }
+            console.log('next');
             const extensionID = getExtensionIdForOpcode(blockJSON.opcode);
+            const menuRegex = /menu_\d+/g;
+            if (extensionID && !Object.keys(primitiveOpcodeInfoMap).includes(blockJSON.opcode) && !menuRegex.test(blockJSON.opcode)) {
+                const instance = extensionManager.getExtensionInstance(extensionID);
+                var extensionBlocks = instance.info.blocks;
+                extensionBlocks = extensionBlocks.reduce((acc, tempBlock) => {
+                    acc[tempBlock.opcode] = tempBlock;
+                    return acc;
+                }, {});
+                var blockInfoIndex = blockJSON.opcode;
+                if (!Object.keys(primitiveOpcodeInfoMap).includes(blockJSON.opcode)) {
+                    blockInfoIndex = blockJSON.opcode.replace(`${blockJSON.opcode.split("_")[0]}_`, "");
+                }
+                console.log(blockInfoIndex);
+                console.log(extensionBlocks);
+                const versionList = extensionBlocks[blockInfoIndex].versions;
+                console.log(typeof versionList);
+                console.log(Object.keys(versionList));
+                if (versionList != [] && version < Object.keys(versionList).length) {
+                    console.log("next2");
+                    const blockArgs = removeImageEntries(extensionBlocks[blockInfoIndex].arguments);
+                    
+                    var { inputs, variables } = gatherInputs(object.blocks, blockJSON);
+                    var fields = gatherFields(blockJSON, blockArgs);
+                    var totalList = addInputsAndFields(inputs, fields, blockArgs);
+                    const newInputs = {};
+                    const newFields = {};
+                    
+                    console.log(totalList);
+                    for (let i = version; i < Object.keys(versionList).length; i++) {
+                        totalList = versionList[i](...totalList);
+                        variables = updateDictionary(variables, analyzeFunction(versionList[i]));
+                    }
+                    console.log(totalList)
+                    for (let i = 0; i < Object.keys(blockArgs).length; i++) {
+                        const argIndex = Object.keys(blockArgs)[i];
+                        if (Object.keys(variables).includes(argIndex)) {
+                            newInputs[argIndex] = variables[argIndex];
+                        } else if (blockArgs[argIndex].menu) {
+                            console.log(typeof totalList[argIndex]);
+                            var fieldValue = totalList[argIndex];
+                            if (typeof fieldValue == "number") {
+                                fieldvalue = String(fieldValue);  
+                            }
+                            newFields[argIndex] = {
+                                name: String(argIndex),
+                                value: fieldValue,
+                                id: null
+                            }
+                        } else {
+                            const primitiveId = createInputBlock(object.blocks, blockArgs[argIndex].type, totalList[argIndex], blockJSON.id, blocks);
+                            newInputs[argIndex] = {
+                                name: String(argIndex),
+                                block: primitiveId,
+                                shadow: primitiveId,
+                            }
+                        }
+                        
+                    }
+                    // for (let i = 0; i < Object.keys(blockJSON.inputs).length; i++) {
+                    //     delete object.blocks[blockJSON.inputs[i].block];
+                    // }
+                    console.log("newInputs");
+                    blockJSON.inputs = newInputs;
+                    blockJSON.fields = newFields;
+                    console.log("FINAL BLOCK");
+                    console.log(blockJSON);
+                }
+            }
+            
+            blocks.createBlock(blockJSON);
             if (extensionID) {
                 extensions.extensionIDs.add(extensionID);
             }
+
+            
         }
     }
     // Costumes from JSON.
@@ -1125,6 +1425,7 @@ const deserializeMonitor = function (monitorData, runtime, targets, extensions) 
     // If the serialized monitor has spriteName defined, look up the sprite
     // by name in the given list of targets and update the monitor's targetId
     // to match the sprite's id.
+
     if (monitorData.spriteName) {
         const filteredTargets = targets.filter(t => t.sprite.name === monitorData.spriteName);
         if (filteredTargets && filteredTargets.length > 0) {
@@ -1263,16 +1564,23 @@ const replaceUnsafeCharsInVariableIds = function (targets) {
  * @param  {Runtime} runtime - Runtime instance
  * @param {JSZip} zip - Sb3 file describing this project (to load assets from)
  * @param {boolean} isSingleSprite - If true treat as single sprite, else treat as whole project
+ * @param {import("../extension-support/extension-manager")} extensionManager Reference to VM's extension manager.
  * @returns {Promise.<ImportedProject>} Promise that resolves to the list of targets after the project is deserialized
  */
-const deserialize = function (json, runtime, zip, isSingleSprite) {
+const deserialize = function (json, runtime, zip, isSingleSpriteOrExtensionManager) {
     const extensions = {
         extensionIDs: new Set(),
         extensionURLs: new Map()
     };
 
-    /* PRG ADDITION BEGIN */
-    json["extensions"]?.forEach(id => extensions.extensionIDs.add(id));
+    
+    var extensionManager = null;
+    var isSingleSprite = false;
+    if (isSingleSpriteOrExtensionManager && isSingleSpriteOrExtensionManager.runtime == runtime) {
+        extensionManager = isSingleSpriteOrExtensionManager;
+    } else if (isSingleSpriteOrExtensionManager == true && isSingleSpriteOrExtensionManager == false) {
+        isSingleSprite = isSingleSpriteOrExtensionManager;
+    }
 
     // Unpack the data for the text model
     runtime.modelData = { "textData": {}, "classifierData": {}, "nextLabelNumber": 1 };
@@ -1297,6 +1605,9 @@ const deserialize = function (json, runtime, zip, isSingleSprite) {
         runtime.origin = null;
     }
 
+    console.log("extension manager");
+    console.log(extensionManager);
+
     // First keep track of the current target order in the json,
     // then sort by the layer order property before parsing the targets
     // so that their corresponding render drawables can be created in
@@ -1316,7 +1627,7 @@ const deserialize = function (json, runtime, zip, isSingleSprite) {
         .then(assets => Promise.resolve(assets))
         .then(assets => Promise.all(targetObjects
             .map((target, index) =>
-                parseScratchObject(target, runtime, extensions, zip, assets[index]))))
+                parseScratchObject(target, runtime, extensions, zip, assets[index], extensionManager))))
         .then(targets => targets // Re-sort targets back into original sprite-pane ordering
             .map((t, i) => {
                 // Add layer order property to deserialized targets.
