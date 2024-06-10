@@ -1250,7 +1250,6 @@ const parseScratchObject = function (object, runtime, extensions, zip, assets, e
     if (Object.prototype.hasOwnProperty.call(object, 'blocks')) {
         deserializeBlocks(object.blocks, extensionManager);
         // Take a second pass to create objects and add extensions
-        var removeReporters = {};
         for (const blockId in object.blocks) {
             if (!Object.prototype.hasOwnProperty.call(object.blocks, blockId)) continue;
             const blockJSON = object.blocks[blockId];
