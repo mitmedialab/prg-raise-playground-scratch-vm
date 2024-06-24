@@ -293,6 +293,7 @@ const getExtensionIdForOpcode = function (opcode) {
  * Serialize the given blocks object (representing all the blocks for the target
  * currently being serialized.)
  * @param {object} blocks The blocks to be serialized
+ * @param {import("../extension-support/extension-manager")} extensionManager Reference to VM's extension manager.
  * @return {Array} An array of the serialized blocks with compressed inputs and
  * compressed primitives and the list of all extension IDs present
  * in the serialized blocks.
@@ -467,6 +468,7 @@ const serializeComments = function (comments) {
  * for saving and loading this target.
  * @param {object} target The target to be serialized.
  * @param {Set} extensions A set of extensions to add extension IDs to
+ * @param {import("../extension-support/extension-manager")} extensionManager Reference to VM's extension manager.
  * @return {object} A serialized representation of the given target.
  */
 const serializeTarget = function (target, extensions, extensionManager) {
@@ -984,7 +986,11 @@ const updateDictionary = function(originalDict, keyMapping) {
     return updatedDict;
 }
 
-// REMOVING STATIC IMAGE ENTRIES FROM DICTIONARIES
+/**
+ * Remove image entries from the passed-in arguments for each block from the extension
+ * @param {object} dict The arguments of the block
+ * @return {object} The arguments of the block with the static images removed
+ */
 const removeImageEntries = function(dict) {
     const filteredDict = {};
 
@@ -997,8 +1003,14 @@ const removeImageEntries = function(dict) {
     return filteredDict;
 }
 
-
-// FUNCTION TO GATHER INPUTS
+/**
+ * Gather the primitive values from the 'inputs' property of a block as well as the block's variables
+ * 
+ * @param {object} blocks The blocks related to the Scratch object
+ * @param {object} blockJSON The block to gather the inputs from
+ * @return {object} return.inputs - A dictionary of the inputs, with each value a primitive object
+ * @return {object} return.variables - A dictionary with all th block's variables as values and their positions as keys
+ */
 const gatherInputs = function(blocks, blockJSON) {
     var inputs = {};
     var variables = {};
@@ -1025,7 +1037,13 @@ const gatherInputs = function(blocks, blockJSON) {
     return { inputs, variables };
 }
 
-// FUNCTION TO GATHER FIELDS
+/**
+ * Gather the primitive values from the 'fields' property of a block
+ * 
+ * @param {object} blockJSON The block to gather the fields from
+ * @param {object} argList The argument dictionary related to the block
+ * @return {object} A dictionary of the fields, with each value a primitive object
+ */
 const gatherFields = function(blockJSON, argList) {
     var fields = {};
     if (blockJSON.fields && Object.keys(blockJSON.fields).length > 0) {
@@ -1043,7 +1061,16 @@ const gatherFields = function(blockJSON, argList) {
     return fields;
 }
 
-// FUNCTION TO CREATE INPUT BLOCKS
+/**
+ * Create a primitive block to insert into a block's inputs
+ * 
+ * @param {object} blocks The blocks related to the Scratch object
+ * @param {string} type The type of primitive block to create
+ * @param {any} value The value to create the primitive block with
+ * @param {string} parentId The parent block of the created primitive block
+ * @param {Blocks} blockLib The block container associated with the current runtime
+ * @return {string} The ID of the new primitive block
+ */
 const createInputBlock = function (blocks, type, value, parentId, blockLib) {
     value = String(value);
     const primitiveObj = Object.create(null);
@@ -1118,7 +1145,15 @@ const createInputBlock = function (blocks, type, value, parentId, blockLib) {
     return newId;
 };
 
-// FUNCTION TO MERGE INPUTS AND FIELDS
+/**
+ * A function that combines the primitive values from the block's inputs and fields
+ * so that it can be processed by the version functions
+ * 
+ * @param {object} inputs A dictionary with the primitive values of the block's inputs
+ * @param {object} fields A dictionary with the primitive values of the block's fields
+ * @param {object} argList The argument dictionary for the associated block
+ * @return {Array} An array with the combined primitive values from the block's inputs and fields
+ */
 const addInputsAndFields = function(inputs, fields, argList) {
     var total = [];
 
@@ -1132,7 +1167,17 @@ const addInputsAndFields = function(inputs, fields, argList) {
     return total;
 }
 
-// FUNCTION TO EXTRACT ARGUMENT RE-ORDERING
+/**
+ * A function that analyzes a function in order to determine where the parameters
+ * end up in the returned value. For instance, (a, b, c) => [c*2, a+3, b/3] would 
+ * give us { 0: 1, 1: 2, 2: 0 }, with the keys as the original positions and the values
+ * as the returned positions
+ * 
+ * @param {Function} fn The function to analyze
+ * @return {object} A dictionary with the keys as the parameters' original positions and
+ * the values as the returned positions. The parameter only has a key/value pair if it is 
+ * transformed in the return statement
+ */
 const analyzeFunction = function(fn) {
     // Convert function to string and extract parameter names
     const fnStr = fn.toString();
@@ -1172,7 +1217,17 @@ const analyzeFunction = function(fn) {
     return paramMapping;
 };
 
-
+/**
+ * If a block has moved from a reporter to a command, we use this function to remove 
+ * that block from the inputs of its parent.
+ * 
+ * @param {object} block The parent block to remove the input from
+ * @param {object} removeBlock The block to remove
+ * @param {object} blocks The blocks associated with the Scratch object
+ * @param {Blocks} blockLib The block container associated with the current runtime
+ * @param {object} argInfo The argument dictionary for the parent block
+ * @return {object} The parent block with the input removed
+ */
 function removeInput(block, removeBlock, blocks, blockLib, argInfo) {
     const inputs = block.inputs;
     const newInputs = {};
@@ -1193,6 +1248,14 @@ function removeInput(block, removeBlock, blocks, blockLib, argInfo) {
     return block;
 }
 
+/**
+ * This function creates a dictionary with the opcode associated with each block
+ * at each version, so that if an opcode changes during a version, we'll be able
+ * to find the correct block.
+ * 
+ * @param {object} blockInfo A dictionary with the information of each block from the extension
+ * @return {object} The dictionary with each block's opcode at each version
+ */
 function createNameMap(blockInfo) {
     const versionMap = {};
     
