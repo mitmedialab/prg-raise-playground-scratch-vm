@@ -319,8 +319,13 @@ const serializeBlocks = function (blocks, extensionManager) {
             blockInfoIndex = blockInfoIndex.replace(regex, ""); // Replaces all matches with an empty string
             const menuRegex = /menu_\d+/;
             if (!menuRegex.test(blockInfoIndex)) {
-                const versionList = extensionBlocks[blockInfoIndex].versions;
-                blocks[blockID].opcode = `${blocks[blockID].opcode}_v${Object.keys(versionList).length}`;
+                const versionList = instance.getVersion(blocks[blockID].opcode);
+                if (versionList) {
+                    blocks[blockID].opcode = `${blocks[blockID].opcode}_v${versionList.length}`;
+                } else {
+                    blocks[blockID].opcode = `${blocks[blockID].opcode}_v0`;
+                }
+                
             }
             
         }
@@ -1252,7 +1257,7 @@ const parseScratchObject = function (object, runtime, extensions, zip, assets, e
         // Take a second pass to create objects and add extensions
         for (const blockId in object.blocks) {
             if (!Object.prototype.hasOwnProperty.call(object.blocks, blockId)) continue;
-            const blockJSON = object.blocks[blockId];
+            let blockJSON = object.blocks[blockId];
             let version = 0;
             const blockOpcode = blockJSON.opcode;
 
@@ -1279,144 +1284,146 @@ const parseScratchObject = function (object, runtime, extensions, zip, assets, e
                 // Collect block version information for extension
                 const instance = extensionManager.getExtensionInstance(extensionID);
                 
-                var extensionBlocks = instance.info.blocks;
-                extensionBlocks = extensionBlocks.reduce((acc, tempBlock) => {
-                    acc[tempBlock.opcode] = tempBlock;
-                    return acc;
-                }, {});
-                var blockInfoIndex = blockJSON.opcode;
-                blockInfoIndex = blockJSON.opcode.replace(`${blockJSON.opcode.split("_")[0]}_`, "");
-                const versionMap = createNameMap(extensionBlocks);
-                if (versionMap[version] && versionMap[version][blockInfoIndex]) {
-                    blockInfoIndex = versionMap[version][blockInfoIndex];
-                }
-                const versionList = extensionBlocks[blockInfoIndex].versions;
-                // Make sure version functions exist
-                if (versionList != [] && version < Object.keys(versionList).length) {
-                    // Delete static images
-                    const blockArgs = removeImageEntries(extensionBlocks[blockInfoIndex].arguments);
-                    // Gather arguments and variable positions
-                    var { inputs, variables } = gatherInputs(object.blocks, blockJSON);
-                    var fields = gatherFields(blockJSON, blockArgs);
-                    var totalList = addInputsAndFields(inputs, fields, blockArgs);
-                    const newInputs = {};
-                    const newFields = {};
+                // var extensionBlocks = instance.info.blocks;
+                // extensionBlocks = extensionBlocks.reduce((acc, tempBlock) => {
+                //     acc[tempBlock.opcode] = tempBlock;
+                //     return acc;
+                // }, {});
+                // var blockInfoIndex = blockJSON.opcode;
+                // blockInfoIndex = blockJSON.opcode.replace(`${blockJSON.opcode.split("_")[0]}_`, "");
+                // const versionMap = createNameMap(extensionBlocks);
+                // if (versionMap[version] && versionMap[version][blockInfoIndex]) {
+                //     blockInfoIndex = versionMap[version][blockInfoIndex];
+                // }
+                // const versionList = extensionBlocks[blockInfoIndex].versions;
+                // // Make sure version functions exist
+                // if (versionList != [] && version < Object.keys(versionList).length) {
+                //     // Delete static images
+                //     const blockArgs = removeImageEntries(extensionBlocks[blockInfoIndex].arguments);
+                //     // Gather arguments and variable positions
+                //     var { inputs, variables } = gatherInputs(object.blocks, blockJSON);
+                //     var fields = gatherFields(blockJSON, blockArgs);
+                //     var totalList = addInputsAndFields(inputs, fields, blockArgs);
+                //     const newInputs = {};
+                //     const newFields = {};
                     
-                    // Update arguments for each version and re-order variables if necessary
-                    let changed = false;
-                    let moveToSay = false;
-                    for (let i = version; i < Object.keys(versionList).length; i++) {
-                        if (typeof versionList[i] == "object") {
-                            if (versionList[i].transform) {
-                                totalList = versionList[i].transform(...totalList);
-                                variables = updateDictionary(variables, analyzeFunction(versionList[i].transform))
-                            }
-                            if (versionList[i].type) {
-                                if (Object.keys(versionList[i].type)[0] == "reporter") { // reporter to command
-                                    changed = !changed;
-                                    if (moveToSay) {
-                                        moveToSay = false;
-                                    } 
-                                } else { // command to reporter
-                                    changed = !changed;
-                                    if (!moveToSay) {
-                                        moveToSay = true;
-                                    }
-                                }
-                            }
-                            if (versionList[i].name) {
-                                const oldName = Object.keys(versionList[i].name)[0];
-                                const newName = versionList[i].name[oldName];
-                                blockJSON.opcode = blockJSON.opcode.replace(oldName, newName);
-                            }
-                        } else {
-                            totalList = versionList[i](...totalList);
-                            variables = updateDictionary(variables, analyzeFunction(versionList[i]));
-                        }
+                //     // Update arguments for each version and re-order variables if necessary
+                //     let changed = false;
+                //     let moveToSay = false;
+                //     for (let i = version; i < Object.keys(versionList).length; i++) {
+                //         if (typeof versionList[i] == "object") {
+                //             if (versionList[i].transform) {
+                //                 totalList = versionList[i].transform(...totalList);
+                //                 variables = updateDictionary(variables, analyzeFunction(versionList[i].transform))
+                //             }
+                //             if (versionList[i].type) {
+                //                 if (Object.keys(versionList[i].type)[0] == "reporter") { // reporter to command
+                //                     changed = !changed;
+                //                     if (moveToSay) {
+                //                         moveToSay = false;
+                //                     } 
+                //                 } else { // command to reporter
+                //                     changed = !changed;
+                //                     if (!moveToSay) {
+                //                         moveToSay = true;
+                //                     }
+                //                 }
+                //             }
+                //             if (versionList[i].name) {
+                //                 const oldName = Object.keys(versionList[i].name)[0];
+                //                 const newName = versionList[i].name[oldName];
+                //                 blockJSON.opcode = blockJSON.opcode.replace(oldName, newName);
+                //             }
+                //         } else {
+                //             totalList = versionList[i](...totalList);
+                //             variables = updateDictionary(variables, analyzeFunction(versionList[i]));
+                //         }
                         
-                    }
-                    // Place new arguments in their respective input/field entries
-                    for (let i = 0; i < Object.keys(blockArgs).length; i++) {
-                        const argIndex = Object.keys(blockArgs)[i];
-                        if (Object.keys(variables).includes(argIndex)) {
-                            newInputs[argIndex] = variables[argIndex];
-                        } else if (blockArgs[argIndex].menu) {
-                            var fieldValue = totalList[argIndex];
-                            if (typeof fieldValue == "number") {
-                                fieldvalue = String(fieldValue);  
-                            }
-                            newFields[argIndex] = {
-                                name: String(argIndex),
-                                value: fieldValue,
-                                id: null
-                            }
-                        } else {
-                            const primitiveId = createInputBlock(object.blocks, blockArgs[argIndex].type, totalList[argIndex], blockJSON.id, blocks);
-                            newInputs[argIndex] = {
-                                name: String(argIndex),
-                                block: primitiveId,
-                                shadow: primitiveId,
-                            }
-                        }
+                //     }
+                //     // Place new arguments in their respective input/field entries
+                //     for (let i = 0; i < Object.keys(blockArgs).length; i++) {
+                //         const argIndex = Object.keys(blockArgs)[i];
+                //         if (Object.keys(variables).includes(argIndex)) {
+                //             newInputs[argIndex] = variables[argIndex];
+                //         } else if (blockArgs[argIndex].menu) {
+                //             var fieldValue = totalList[argIndex];
+                //             if (typeof fieldValue == "number") {
+                //                 fieldvalue = String(fieldValue);  
+                //             }
+                //             newFields[argIndex] = {
+                //                 name: String(argIndex),
+                //                 value: fieldValue,
+                //                 id: null
+                //             }
+                //         } else {
+                //             const primitiveId = createInputBlock(object.blocks, blockArgs[argIndex].type, totalList[argIndex], blockJSON.id, blocks);
+                //             newInputs[argIndex] = {
+                //                 name: String(argIndex),
+                //                 block: primitiveId,
+                //                 shadow: primitiveId,
+                //             }
+                //         }
                         
-                    }
+                //     }
                     
-                    // Re-assign fields and inputs
-                    blockJSON.inputs = newInputs;
-                    blockJSON.fields = newFields;
+                //     // Re-assign fields and inputs
+                //     blockJSON.inputs = newInputs;
+                //     blockJSON.fields = newFields;
 
-                    if (moveToSay && changed) {
-                        const oldID = blockJSON.id;
-                        const next = blockJSON.next;
-                        blockJSON.id = uid();
-                        //blockJSON.topLevel = false;
-                        const newBlock = Object.create(null);
-                        newBlock.id = oldID;
-                        newBlock.parent = blockJSON.parent;
-                        blockJSON.parent = newBlock.id;
-                        newBlock.fields = {};
-                        newBlock.inputs = {
-                            MESSAGE: {
-                                name: 'MESSAGE',
-                                block: blockJSON.id,
-                                shadow: blockJSON.id
-                            }
-                        }
-                        newBlock.next = next;
-                        blockJSON.next = null;
-                        newBlock.opcode = "looks_say";
-                        newBlock.shadow = false;
-                        //newBlock.topLevel = true;
-                        for (const key of Object.keys(blockJSON.inputs)) {
-                            if (blockJSON.inputs[key].block) {
-                                let inputBlock = blockJSON.inputs[key].block;
-                                if (object.blocks[inputBlock]) {
-                                    object.blocks[inputBlock].parent = blockJSON.id;
-                                    blockJSON.inputs[key].shadow = blockJSON.inputs[key].block;
-                                }
+                //     if (moveToSay && changed) {
+                //         const oldID = blockJSON.id;
+                //         const next = blockJSON.next;
+                //         blockJSON.id = uid();
+                //         //blockJSON.topLevel = false;
+                //         const newBlock = Object.create(null);
+                //         newBlock.id = oldID;
+                //         newBlock.parent = blockJSON.parent;
+                //         blockJSON.parent = newBlock.id;
+                //         newBlock.fields = {};
+                //         newBlock.inputs = {
+                //             MESSAGE: {
+                //                 name: 'MESSAGE',
+                //                 block: blockJSON.id,
+                //                 shadow: blockJSON.id
+                //             }
+                //         }
+                //         newBlock.next = next;
+                //         blockJSON.next = null;
+                //         newBlock.opcode = "looks_say";
+                //         newBlock.shadow = false;
+                //         //newBlock.topLevel = true;
+                //         for (const key of Object.keys(blockJSON.inputs)) {
+                //             if (blockJSON.inputs[key].block) {
+                //                 let inputBlock = blockJSON.inputs[key].block;
+                //                 if (object.blocks[inputBlock]) {
+                //                     object.blocks[inputBlock].parent = blockJSON.id;
+                //                     blockJSON.inputs[key].shadow = blockJSON.inputs[key].block;
+                //                 }
 
-                            }
-                        }
-                        blocks.createBlock(newBlock);
-                        blocks.createBlock(blockJSON);
-                        object.blocks[newBlock.id] = newBlock;
-                        object.blocks[blockJSON.id] = blockJSON;
-                    } else if (!moveToSay && changed) {
-                        if (object.blocks[blockJSON.parent]) {
-                            const parentBlock = object.blocks[blockJSON.parent];
-                            if (parentBlock) {
-                                let parentIndex = parentBlock.opcode;
-                                parentIndex = parentIndex.replace(`${parentIndex.split("_")[0]}_`, "");
-                                parentIndex = parentIndex.replace(regex, "");
-                                let argInfo = extensionBlocks[parentIndex].arguments;
-                                object.blocks[parentBlock.id] = removeInput(parentBlock, blockJSON, object.blocks, blocks, argInfo);
-                                blockJSON.parent = null;
-                                blockJSON.topLevel = true;
-                            } 
+                //             }
+                //         }
+                //         blocks.createBlock(newBlock);
+                //         blocks.createBlock(blockJSON);
+                //         object.blocks[newBlock.id] = newBlock;
+                //         object.blocks[blockJSON.id] = blockJSON;
+                //     } else if (!moveToSay && changed) {
+                //         if (object.blocks[blockJSON.parent]) {
+                //             const parentBlock = object.blocks[blockJSON.parent];
+                //             if (parentBlock) {
+                //                 let parentIndex = parentBlock.opcode;
+                //                 parentIndex = parentIndex.replace(`${parentIndex.split("_")[0]}_`, "");
+                //                 parentIndex = parentIndex.replace(regex, "");
+                //                 let argInfo = extensionBlocks[parentIndex].arguments;
+                //                 object.blocks[parentBlock.id] = removeInput(parentBlock, blockJSON, object.blocks, blocks, argInfo);
+                //                 blockJSON.parent = null;
+                //                 blockJSON.topLevel = true;
+                //             } 
                             
-                        } 
-                    } 
-                }
+                //         } 
+                    // } 
+                //   }
+                
+                object.blocks = instance.alterProjectJSON(object.blocks, blockJSON, version, blocks);
             }
             
             blocks.createBlock(blockJSON);
