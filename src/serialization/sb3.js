@@ -304,30 +304,7 @@ const serializeBlocks = function (blocks, extensionManager) {
         if (!Object.prototype.hasOwnProperty.call(blocks, blockID)) continue;
         const extensionID = getExtensionIdForOpcode(blocks[blockID].opcode);
         if (extensionID) {
-            extensionIDs.add(extensionID);
-            const instance = extensionManager.getExtensionInstance(extensionID);
-            var extensionBlocks = instance.info.blocks;
-            extensionBlocks = extensionBlocks.reduce((acc, tempBlock) => {
-                acc[tempBlock.opcode] = tempBlock;
-                return acc;
-            }, {});
-            var blockInfoIndex = blocks[blockID].opcode;
-            if (!Object.keys(primitiveOpcodeInfoMap).includes(blocks[blockID].opcode)) {
-                blockInfoIndex = blocks[blockID].opcode.replace(`${blocks[blockID].opcode.split("_")[0]}_`, "");
-            }
-            const regex = /_v\d+/g; // Matches _v followed by one or more digits
-            blockInfoIndex = blockInfoIndex.replace(regex, ""); // Replaces all matches with an empty string
-            const menuRegex = /menu_\d+/;
-            if (!menuRegex.test(blockInfoIndex)) {
-                const versionList = instance.getVersion(blocks[blockID].opcode);
-                if (versionList) {
-                    blocks[blockID].opcode = `${blocks[blockID].opcode}_v${versionList.length}`;
-                } else {
-                    blocks[blockID].opcode = `${blocks[blockID].opcode}_v0`;
-                }
-                
-            }
-            
+            extensionIDs.add(extensionID);            
         }
         obj[blockID] = serializeBlock(blocks[blockID], blocks);
     }
@@ -600,8 +577,7 @@ const serialize = function (runtime, targetId, /* PRG ADDITION BEGIN */ extensio
     /* PRG ADDITION BEGIN */
     extensionManager.getLoadedExtensionIDs().forEach(id => {
         const instance = extensionManager.getExtensionInstance(id);
-        console.log("EXTENSION INSTABNCE");
-        console.log(instance);
+        obj.targets = instance.alterOpcodes(obj.targets);
         instance["save"]?.(obj, extensions);
     });
     /* PRG ADDITION END */
