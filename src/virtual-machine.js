@@ -569,6 +569,7 @@ class VirtualMachine extends EventEmitter {
                             console.log("EXTENSION ID LOADED");
                         }
                         const instance = extensionManager.getExtensionInstance(extensionID);
+                        projectJSON = instance.alterJSON(projectJSON);
                         return instance;
                     });
                 }

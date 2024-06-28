@@ -1423,7 +1423,7 @@ const parseScratchObject = function (object, runtime, extensions, zip, assets, e
                     // } 
                 //   }
                 
-                object.blocks = instance.alterProjectJSON(object.blocks, blockJSON, version, blocks);
+                //object.blocks = instance.alterProjectJSON(object.blocks, blockJSON, version, blocks);
             }
             
             blocks.createBlock(blockJSON);
