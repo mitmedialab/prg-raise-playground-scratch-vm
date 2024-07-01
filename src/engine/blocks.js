@@ -556,11 +556,14 @@ class Blocks {
         // emit a project changed event
         this.emitProjectChanged();
 
-        const scratchBlock = ScratchBlocks.getMainWorkspace().getBlockById(block.id);
-        if (scratchBlock) {
-            const blockSvg = scratchBlock.getSvgRoot()
-            blockSvg.setAttribute('data-opcode', block.opcode);
+        if (ScratchBlocks.getMainWorkspace()) {
+            const scratchBlock = ScratchBlocks.getMainWorkspace().getBlockById(block.id);
+            if (scratchBlock) {
+                const blockSvg = scratchBlock.getSvgRoot()
+                blockSvg.setAttribute('data-opcode', block.opcode);
+            }
         }
+        
         
     }
 

@@ -577,7 +577,7 @@ const serialize = function (runtime, targetId, /* PRG ADDITION BEGIN */ extensio
     /* PRG ADDITION BEGIN */
     extensionManager.getLoadedExtensionIDs().forEach(id => {
         const instance = extensionManager.getExtensionInstance(id);
-        obj.targets = instance.alterOpcodes(obj.targets);
+        obj.targets = instance["alterOpcodes"]?.(obj.targets);
         instance["save"]?.(obj, extensions);
     });
     /* PRG ADDITION END */
