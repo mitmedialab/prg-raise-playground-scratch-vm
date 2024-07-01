@@ -1,7 +1,7 @@
 const Cast = require('../util/cast');
 
 class Scratch3ControlBlocks {
-    constructor (runtime) {
+    constructor(runtime) {
         /**
          * The runtime instantiating this block package.
          * @type {Runtime}
@@ -19,9 +19,9 @@ class Scratch3ControlBlocks {
 
     /**
      * Retrieve the block primitives implemented by this package.
-     * @return {object.<string, Function>} Mapping of opcode to Function.
+     * @return {Object.<string, Function>} Mapping of opcode to Function.
      */
-    getPrimitives () {
+    getPrimitives() {
         return {
             control_repeat: this.repeat,
             control_repeat_until: this.repeatUntil,
@@ -42,7 +42,7 @@ class Scratch3ControlBlocks {
         };
     }
 
-    getHats () {
+    getHats() {
         return {
             control_start_as_clone: {
                 restartExistingThreads: false
@@ -50,7 +50,7 @@ class Scratch3ControlBlocks {
         };
     }
 
-    repeat (args, util) {
+    repeat(args, util) {
         const times = Math.round(Cast.toNumber(args.TIMES));
         // Initialize loop
         if (typeof util.stackFrame.loopCounter === 'undefined') {
@@ -67,7 +67,7 @@ class Scratch3ControlBlocks {
         }
     }
 
-    repeatUntil (args, util) {
+    repeatUntil(args, util) {
         const condition = Cast.toBoolean(args.CONDITION);
         // If the condition is false (repeat UNTIL), start the branch.
         if (!condition) {
@@ -75,7 +75,7 @@ class Scratch3ControlBlocks {
         }
     }
 
-    repeatWhile (args, util) {
+    repeatWhile(args, util) {
         const condition = Cast.toBoolean(args.CONDITION);
         // If the condition is true (repeat WHILE), start the branch.
         if (condition) {
@@ -83,7 +83,7 @@ class Scratch3ControlBlocks {
         }
     }
 
-    forEach (args, util) {
+    forEach(args, util) {
         const variable = util.target.lookupOrCreateVariable(
             args.VARIABLE.id, args.VARIABLE.name);
 
@@ -98,18 +98,18 @@ class Scratch3ControlBlocks {
         }
     }
 
-    waitUntil (args, util) {
+    waitUntil(args, util) {
         const condition = Cast.toBoolean(args.CONDITION);
         if (!condition) {
             util.yield();
         }
     }
 
-    forever (args, util) {
+    forever(args, util) {
         util.startBranch(1, true);
     }
 
-    wait (args, util) {
+    wait(args, util) {
         if (util.stackTimerNeedsInit()) {
             const duration = Math.max(0, 1000 * Cast.toNumber(args.DURATION));
 
@@ -121,14 +121,14 @@ class Scratch3ControlBlocks {
         }
     }
 
-    if (args, util) {
+    if(args, util) {
         const condition = Cast.toBoolean(args.CONDITION);
         if (condition) {
             util.startBranch(1, false);
         }
     }
 
-    ifElse (args, util) {
+    ifElse(args, util) {
         const condition = Cast.toBoolean(args.CONDITION);
         if (condition) {
             util.startBranch(1, false);
@@ -137,7 +137,7 @@ class Scratch3ControlBlocks {
         }
     }
 
-    stop (args, util) {
+    stop(args, util) {
         const option = args.STOP_OPTION;
         if (option === 'all') {
             util.stopAll();
@@ -149,7 +149,7 @@ class Scratch3ControlBlocks {
         }
     }
 
-    createClone (args, util) {
+    createClone(args, util) {
         // Cast argument to string
         args.CLONE_OPTION = Cast.toString(args.CLONE_OPTION);
 
@@ -174,25 +174,25 @@ class Scratch3ControlBlocks {
         }
     }
 
-    deleteClone (args, util) {
+    deleteClone(args, util) {
         if (util.target.isOriginal) return;
         this.runtime.disposeTarget(util.target);
         this.runtime.stopForTarget(util.target);
     }
 
-    getCounter () {
+    getCounter() {
         return this._counter;
     }
 
-    clearCounter () {
+    clearCounter() {
         this._counter = 0;
     }
 
-    incrCounter () {
+    incrCounter() {
         this._counter++;
     }
 
-    allAtOnce (args, util) {
+    allAtOnce(args, util) {
         // Since the "all at once" block is implemented for compatiblity with
         // Scratch 2.0 projects, it behaves the same way it did in 2.0, which
         // is to simply run the contained script (like "if 1 = 1").

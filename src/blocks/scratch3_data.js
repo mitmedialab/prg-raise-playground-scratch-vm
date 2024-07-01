@@ -1,7 +1,7 @@
 const Cast = require('../util/cast');
 
 class Scratch3DataBlocks {
-    constructor (runtime) {
+    constructor(runtime) {
         /**
          * The runtime instantiating this block package.
          * @type {Runtime}
@@ -11,9 +11,9 @@ class Scratch3DataBlocks {
 
     /**
      * Retrieve the block primitives implemented by this package.
-     * @return {object.<string, Function>} Mapping of opcode to Function.
+     * @return {Object.<string, Function>} Mapping of opcode to Function.
      */
-    getPrimitives () {
+    getPrimitives() {
         return {
             data_variable: this.getVariable,
             data_setvariableto: this.setVariableTo,
@@ -35,13 +35,13 @@ class Scratch3DataBlocks {
         };
     }
 
-    getVariable (args, util) {
+    getVariable(args, util) {
         const variable = util.target.lookupOrCreateVariable(
             args.VARIABLE.id, args.VARIABLE.name);
         return variable.value;
     }
 
-    setVariableTo (args, util) {
+    setVariableTo(args, util) {
         const variable = util.target.lookupOrCreateVariable(
             args.VARIABLE.id, args.VARIABLE.name);
         variable.value = args.VALUE;
@@ -51,7 +51,7 @@ class Scratch3DataBlocks {
         }
     }
 
-    changeVariableBy (args, util) {
+    changeVariableBy(args, util) {
         const variable = util.target.lookupOrCreateVariable(
             args.VARIABLE.id, args.VARIABLE.name);
         const castedValue = Cast.toNumber(variable.value);
@@ -64,7 +64,7 @@ class Scratch3DataBlocks {
         }
     }
 
-    changeMonitorVisibility (id, visible) {
+    changeMonitorVisibility(id, visible) {
         // Send the monitor blocks an event like the flyout checkbox event.
         // This both updates the monitor state and changes the isMonitored block flag.
         this.runtime.monitorBlocks.changeBlock({
@@ -74,23 +74,23 @@ class Scratch3DataBlocks {
         }, this.runtime);
     }
 
-    showVariable (args) {
+    showVariable(args) {
         this.changeMonitorVisibility(args.VARIABLE.id, true);
     }
 
-    hideVariable (args) {
+    hideVariable(args) {
         this.changeMonitorVisibility(args.VARIABLE.id, false);
     }
 
-    showList (args) {
+    showList(args) {
         this.changeMonitorVisibility(args.LIST.id, true);
     }
 
-    hideList (args) {
+    hideList(args) {
         this.changeMonitorVisibility(args.LIST.id, false);
     }
 
-    getListContents (args, util) {
+    getListContents(args, util) {
         const list = util.target.lookupOrCreateList(
             args.LIST.id, args.LIST.name);
 
@@ -111,7 +111,7 @@ class Scratch3DataBlocks {
         for (let i = 0; i < list.value.length; i++) {
             const listItem = list.value[i];
             if (!((typeof listItem === 'string') &&
-                  (listItem.length === 1))) {
+                (listItem.length === 1))) {
                 allSingleLetters = false;
                 break;
             }
@@ -123,7 +123,7 @@ class Scratch3DataBlocks {
 
     }
 
-    addToList (args, util) {
+    addToList(args, util) {
         const list = util.target.lookupOrCreateList(
             args.LIST.id, args.LIST.name);
         if (list.value.length < Scratch3DataBlocks.LIST_ITEM_LIMIT) {
@@ -132,7 +132,7 @@ class Scratch3DataBlocks {
         }
     }
 
-    deleteOfList (args, util) {
+    deleteOfList(args, util) {
         const list = util.target.lookupOrCreateList(
             args.LIST.id, args.LIST.name);
         const index = Cast.toListIndex(args.INDEX, list.value.length, true);
@@ -146,14 +146,14 @@ class Scratch3DataBlocks {
         list._monitorUpToDate = false;
     }
 
-    deleteAllOfList (args, util) {
+    deleteAllOfList(args, util) {
         const list = util.target.lookupOrCreateList(
             args.LIST.id, args.LIST.name);
         list.value = [];
         return;
     }
 
-    insertAtList (args, util) {
+    insertAtList(args, util) {
         const item = args.ITEM;
         const list = util.target.lookupOrCreateList(
             args.LIST.id, args.LIST.name);
@@ -172,7 +172,7 @@ class Scratch3DataBlocks {
         list._monitorUpToDate = false;
     }
 
-    replaceItemOfList (args, util) {
+    replaceItemOfList(args, util) {
         const item = args.ITEM;
         const list = util.target.lookupOrCreateList(
             args.LIST.id, args.LIST.name);
@@ -184,7 +184,7 @@ class Scratch3DataBlocks {
         list._monitorUpToDate = false;
     }
 
-    getItemOfList (args, util) {
+    getItemOfList(args, util) {
         const list = util.target.lookupOrCreateList(
             args.LIST.id, args.LIST.name);
         const index = Cast.toListIndex(args.INDEX, list.value.length, false);
@@ -194,7 +194,7 @@ class Scratch3DataBlocks {
         return list.value[index - 1];
     }
 
-    getItemNumOfList (args, util) {
+    getItemNumOfList(args, util) {
         const item = args.ITEM;
         const list = util.target.lookupOrCreateList(
             args.LIST.id, args.LIST.name);
@@ -222,13 +222,13 @@ class Scratch3DataBlocks {
         return 0;
     }
 
-    lengthOfList (args, util) {
+    lengthOfList(args, util) {
         const list = util.target.lookupOrCreateList(
             args.LIST.id, args.LIST.name);
         return list.value.length;
     }
 
-    listContainsItem (args, util) {
+    listContainsItem(args, util) {
         const item = args.ITEM;
         const list = util.target.lookupOrCreateList(
             args.LIST.id, args.LIST.name);
@@ -249,7 +249,7 @@ class Scratch3DataBlocks {
      * Type representation for list variables.
      * @const {number}
      */
-    static get LIST_ITEM_LIMIT () {
+    static get LIST_ITEM_LIMIT() {
         return 200000;
     }
 }
