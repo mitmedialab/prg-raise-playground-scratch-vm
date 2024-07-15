@@ -552,6 +552,7 @@ class VirtualMachine extends EventEmitter {
             performance.mark('scratch-vm-deserialize-start');
         }
         const runtime = this.runtime;
+        const { extensionManager } = this;
         const deserializePromise = function () {
             const projectVersion = projectJSON.projectVersion;
             if (projectVersion === 2) {
@@ -560,7 +561,25 @@ class VirtualMachine extends EventEmitter {
             }
             if (projectVersion === 3) {
                 const sb3 = require('./serialization/sb3');
+                var extensionPromises = [];
+                if (projectJSON["extensions"]) {
+                    extensionPromises = projectJSON["extensions"].map(async extensionID => {
+                        if (!extensionManager.isExtensionLoaded(extensionID)) {
+                            await extensionManager.loadExtensionURL(extensionID);
+                            console.log("EXTENSION ID LOADED");
+                        }
+                        const instance = extensionManager.getExtensionInstance(extensionID);
+                        projectJSON = instance.alterJSON(projectJSON);
+                        return instance;
+                    });
+                }
+
+                return Promise.all(extensionPromises)
+                    .then(() => {
+                        return sb3.deserialize(projectJSON, runtime, zip, extensionManager);
+                    })
                 return sb3.deserialize(projectJSON, runtime, zip);
+                
             }
             // TODO: reject with an Error (possible breaking API change!)
             // eslint-disable-next-line prefer-promise-reject-errors

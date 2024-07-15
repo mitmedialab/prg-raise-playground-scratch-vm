@@ -297,16 +297,16 @@ const getExtensionIdForOpcode = function (opcode) {
  * compressed primitives and the list of all extension IDs present
  * in the serialized blocks.
  */
-const serializeBlocks = function (blocks) {
+const serializeBlocks = function (blocks, extensionManager) {
     const obj = Object.create(null);
     const extensionIDs = new Set();
     for (const blockID in blocks) {
         if (!Object.prototype.hasOwnProperty.call(blocks, blockID)) continue;
-        obj[blockID] = serializeBlock(blocks[blockID], blocks);
         const extensionID = getExtensionIdForOpcode(blocks[blockID].opcode);
         if (extensionID) {
-            extensionIDs.add(extensionID);
+            extensionIDs.add(extensionID);            
         }
+        obj[blockID] = serializeBlock(blocks[blockID], blocks);
     }
     // once we have completed a first pass, do a second pass on block inputs
     for (const blockID in obj) {
@@ -451,7 +451,7 @@ const serializeComments = function (comments) {
  * @param {Set} extensions A set of extensions to add extension IDs to
  * @return {object} A serialized representation of the given target.
  */
-const serializeTarget = function (target, extensions) {
+const serializeTarget = function (target, extensions, extensionManager) {
     const obj = Object.create(null);
     let targetExtensions = [];
     obj.isStage = target.isStage;
@@ -460,7 +460,7 @@ const serializeTarget = function (target, extensions) {
     obj.variables = vars.variables;
     obj.lists = vars.lists;
     obj.broadcasts = vars.broadcasts;
-    [obj.blocks, targetExtensions] = serializeBlocks(target.blocks);
+    [obj.blocks, targetExtensions] = serializeBlocks(target.blocks, extensionManager);
     obj.comments = serializeComments(target.comments);
 
     // TODO remove this check/patch when (#1901) is fixed
@@ -564,7 +564,7 @@ const serialize = function (runtime, targetId, /* PRG ADDITION BEGIN */ extensio
         });
     }
 
-    const serializedTargets = flattenedOriginalTargets.map(t => serializeTarget(t, extensions));
+    const serializedTargets = flattenedOriginalTargets.map(t => serializeTarget(t, extensions, extensionManager));
 
     if (targetId) {
         return serializedTargets[0];
@@ -577,6 +577,7 @@ const serialize = function (runtime, targetId, /* PRG ADDITION BEGIN */ extensio
     /* PRG ADDITION BEGIN */
     extensionManager.getLoadedExtensionIDs().forEach(id => {
         const instance = extensionManager.getExtensionInstance(id);
+        obj.targets = instance["alterOpcodes"]?.(obj.targets);
         instance["save"]?.(obj, extensions);
     });
     /* PRG ADDITION END */
@@ -839,12 +840,14 @@ const deserializeFields = function (fields) {
  * @param {object} blocks Serialized SB3 "blocks" property of a target. Will be mutated.
  * @return {object} input is modified and returned
  */
-const deserializeBlocks = function (blocks) {
+const deserializeBlocks = function (blocks, extensionManager) {
     for (const blockId in blocks) {
         if (!Object.prototype.hasOwnProperty.call(blocks, blockId)) {
             continue;
         }
         const block = blocks[blockId];
+        
+    
         if (Array.isArray(block)) {
             // this is one of the primitives
             // delete the old entry in object.blocks and replace it w/the
@@ -854,8 +857,10 @@ const deserializeBlocks = function (blocks) {
             continue;
         }
         block.id = blockId; // add id back to block since it wasn't serialized
+        
         block.inputs = deserializeInputs(block.inputs, blockId, blocks);
         block.fields = deserializeFields(block.fields);
+
     }
     return blocks;
 };
@@ -957,7 +962,7 @@ const parseScratchAssets = function (object, runtime, zip) {
  *   into costumes and sounds
  * @return {!Promise.<Target>} Promise for the target created (stage or sprite), or null for unsupported objects.
  */
-const parseScratchObject = function (object, runtime, extensions, zip, assets) {
+const parseScratchObject = function (object, runtime, extensions, zip, assets, extensionManager) {
     if (!Object.prototype.hasOwnProperty.call(object, 'name')) {
         // Watcher/monitor - skip this object until those are implemented in VM.
         // @todo
@@ -974,18 +979,18 @@ const parseScratchObject = function (object, runtime, extensions, zip, assets) {
         sprite.name = object.name;
     }
     if (Object.prototype.hasOwnProperty.call(object, 'blocks')) {
-        deserializeBlocks(object.blocks);
+        deserializeBlocks(object.blocks, extensionManager);
         // Take a second pass to create objects and add extensions
         for (const blockId in object.blocks) {
             if (!Object.prototype.hasOwnProperty.call(object.blocks, blockId)) continue;
-            const blockJSON = object.blocks[blockId];
-            blocks.createBlock(blockJSON);
-
-            // If the block is from an extension, record it.
+            let blockJSON = object.blocks[blockId];
             const extensionID = getExtensionIdForOpcode(blockJSON.opcode);
+            blocks.createBlock(blockJSON);
             if (extensionID) {
                 extensions.extensionIDs.add(extensionID);
             }
+
+            
         }
     }
     // Costumes from JSON.
@@ -1125,6 +1130,7 @@ const deserializeMonitor = function (monitorData, runtime, targets, extensions) 
     // If the serialized monitor has spriteName defined, look up the sprite
     // by name in the given list of targets and update the monitor's targetId
     // to match the sprite's id.
+
     if (monitorData.spriteName) {
         const filteredTargets = targets.filter(t => t.sprite.name === monitorData.spriteName);
         if (filteredTargets && filteredTargets.length > 0) {
@@ -1263,16 +1269,23 @@ const replaceUnsafeCharsInVariableIds = function (targets) {
  * @param  {Runtime} runtime - Runtime instance
  * @param {JSZip} zip - Sb3 file describing this project (to load assets from)
  * @param {boolean} isSingleSprite - If true treat as single sprite, else treat as whole project
+ * @param {import("../extension-support/extension-manager")} extensionManager Reference to VM's extension manager.
  * @returns {Promise.<ImportedProject>} Promise that resolves to the list of targets after the project is deserialized
  */
-const deserialize = function (json, runtime, zip, isSingleSprite) {
+const deserialize = function (json, runtime, zip, isSingleSpriteOrExtensionManager) {
     const extensions = {
         extensionIDs: new Set(),
         extensionURLs: new Map()
     };
 
-    /* PRG ADDITION BEGIN */
-    json["extensions"]?.forEach(id => extensions.extensionIDs.add(id));
+    
+    var extensionManager = null;
+    var isSingleSprite = false;
+    if (isSingleSpriteOrExtensionManager && isSingleSpriteOrExtensionManager.runtime == runtime) {
+        extensionManager = isSingleSpriteOrExtensionManager;
+    } else if (isSingleSpriteOrExtensionManager == true && isSingleSpriteOrExtensionManager == false) {
+        isSingleSprite = isSingleSpriteOrExtensionManager;
+    }
 
     // Unpack the data for the text model
     runtime.modelData = { "textData": {}, "classifierData": {}, "nextLabelNumber": 1 };
@@ -1297,6 +1310,9 @@ const deserialize = function (json, runtime, zip, isSingleSprite) {
         runtime.origin = null;
     }
 
+    console.log("extension manager");
+    console.log(extensionManager);
+
     // First keep track of the current target order in the json,
     // then sort by the layer order property before parsing the targets
     // so that their corresponding render drawables can be created in
@@ -1316,7 +1332,7 @@ const deserialize = function (json, runtime, zip, isSingleSprite) {
         .then(assets => Promise.resolve(assets))
         .then(assets => Promise.all(targetObjects
             .map((target, index) =>
-                parseScratchObject(target, runtime, extensions, zip, assets[index]))))
+                parseScratchObject(target, runtime, extensions, zip, assets[index], extensionManager))))
         .then(targets => targets // Re-sort targets back into original sprite-pane ordering
             .map((t, i) => {
                 // Add layer order property to deserialized targets.
