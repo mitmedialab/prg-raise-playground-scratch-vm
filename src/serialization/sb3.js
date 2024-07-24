@@ -304,7 +304,7 @@ const serializeBlocks = function (blocks, extensionManager) {
         if (!Object.prototype.hasOwnProperty.call(blocks, blockID)) continue;
         const extensionID = getExtensionIdForOpcode(blocks[blockID].opcode);
         if (extensionID) {
-            extensionIDs.add(extensionID);            
+            extensionIDs.add(extensionID);
         }
         obj[blockID] = serializeBlock(blocks[blockID], blocks);
     }
@@ -577,7 +577,7 @@ const serialize = function (runtime, targetId, /* PRG ADDITION BEGIN */ extensio
     /* PRG ADDITION BEGIN */
     extensionManager.getLoadedExtensionIDs().forEach(id => {
         const instance = extensionManager.getExtensionInstance(id);
-        obj.targets = instance["alterOpcodes"]?.(obj.targets);
+        instance["alterOpcodes"]?.(obj);
         instance["save"]?.(obj, extensions);
     });
     /* PRG ADDITION END */
@@ -846,8 +846,8 @@ const deserializeBlocks = function (blocks, extensionManager) {
             continue;
         }
         const block = blocks[blockId];
-        
-    
+
+
         if (Array.isArray(block)) {
             // this is one of the primitives
             // delete the old entry in object.blocks and replace it w/the
@@ -857,7 +857,7 @@ const deserializeBlocks = function (blocks, extensionManager) {
             continue;
         }
         block.id = blockId; // add id back to block since it wasn't serialized
-        
+
         block.inputs = deserializeInputs(block.inputs, blockId, blocks);
         block.fields = deserializeFields(block.fields);
 
@@ -990,7 +990,7 @@ const parseScratchObject = function (object, runtime, extensions, zip, assets, e
                 extensions.extensionIDs.add(extensionID);
             }
 
-            
+
         }
     }
     // Costumes from JSON.
@@ -1278,7 +1278,7 @@ const deserialize = function (json, runtime, zip, isSingleSpriteOrExtensionManag
         extensionURLs: new Map()
     };
 
-    
+
     var extensionManager = null;
     var isSingleSprite = false;
     if (isSingleSpriteOrExtensionManager && isSingleSpriteOrExtensionManager.runtime == runtime) {
