@@ -155,6 +155,12 @@ class VirtualMachine extends EventEmitter {
             this.emit(Runtime.HAS_CLOUD_DATA_UPDATE, hasCloudData);
         });
 
+        /** PRG ADDITION BEGIN */
+        this.runtime.on(Runtime.ADD_BLOCKS_TO_WORKSPACE, (xmlToAdd) => {
+            this.emitWorkspaceUpdateWithAdditionalBlocks(xmlToAdd);
+        });
+        /** PRG ADDITION END */
+
         this.extensionManager = new ExtensionManager(this.runtime);
 
         // Load core extensions
@@ -1421,11 +1427,19 @@ class VirtualMachine extends EventEmitter {
         }
     }
 
+    /** PRG ADDITION BEGIN */
+
     /**
-     * Emit an Blockly/scratch-blocks compatible XML representation
+     * NOTE: The change was to extract the xml generating aspects of the original implementation of `emitWorkspaceUpdate`,
+     * and stick into a new function `generateWorkspaceXML` that can then be called by `emitWorkspaceUpdate`, 
+     * as well as our new method `emitWorkspaceUpdateWithAdditionalBlocks`.
+     */
+
+    /**
+     * Retrieve a Blockly/scratch-blocks compatible XML representation
      * of the current editing target's blocks.
      */
-    emitWorkspaceUpdate() {
+    getWorkspaceXML() {
         // Create a list of broadcast message Ids according to the stage variables
         const stageVariables = this.runtime.getTargetForStage().variables;
         let messageIds = [];
@@ -1466,17 +1480,32 @@ class VirtualMachine extends EventEmitter {
             .map(k => this.editingTarget.comments[k])
             .filter(c => c.blockId === null);
 
-        const xmlString = `<xml xmlns="http://www.w3.org/1999/xhtml">
-                            <variables>
-                                ${globalVariables.map(v => v.toXML()).join()}
-                                ${localVariables.map(v => v.toXML(true)).join()}
-                            </variables>
-                            ${workspaceComments.map(c => c.toXML()).join()}
-                            ${this.editingTarget.blocks.toXML(this.editingTarget.comments)}
-                        </xml>`;
-
-        this.emit('workspaceUpdate', { xml: xmlString });
+        return `<xml xmlns="http://www.w3.org/1999/xhtml">
+                    <variables>
+                        ${globalVariables.map(v => v.toXML()).join()}
+                        ${localVariables.map(v => v.toXML(true)).join()}
+                    </variables>
+                    ${workspaceComments.map(c => c.toXML()).join()}
+                    ${this.editingTarget.blocks.toXML(this.editingTarget.comments)}
+                </xml>`;
     }
+
+    /**
+     * Emit an Blockly/scratch-blocks compatible XML representation
+     * of the current editing target's blocks.
+     */
+    emitWorkspaceUpdate() {
+        this.emit('workspaceUpdate', { xml: this.getWorkspaceXML() });
+    }
+
+    emitWorkspaceUpdateWithAdditionalBlocks(newBlocksXML) {
+        const workspaceXml = this.getWorkspaceXML().split(/\n/);
+        workspaceXml.splice(workspaceXml.length - 1, 0, newBlocksXML.split(/\n/));
+        const updated = workspaceXml.join('\r\n');
+        this.emit('workspaceUpdate', { xml: updated });
+    }
+
+    /** PRG ADDITION END */
 
     /**
      * Get a target id for a drawable id. Useful for interacting with the renderer
