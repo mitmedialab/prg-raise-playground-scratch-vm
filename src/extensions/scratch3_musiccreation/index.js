@@ -409,16 +409,16 @@ class Scratch3MusicCreation {
                     arguments: {
                         A: {
                             type: ArgumentType.NOTE,
-                            defaultValue: 0
+                            defaultValue: 60
                         },
                         B: {
                             type: ArgumentType.NOTE,
 
-                            defaultValue: 0
+                            defaultValue: 64
                         },
                         C: {
                             type: ArgumentType.NOTE,
-                            defaultValue: 0
+                            defaultValue: 67
                         },
                         SECS: {
                             type: ArgumentType.NUMBER,

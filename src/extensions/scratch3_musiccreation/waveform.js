@@ -11,8 +11,7 @@ const textRender = require('./textrender');
 const { updateVariableIdentifiers } = require('../../util/variable-util');
 
 
-var colorToFreq;
-
+var colorToFreq, note, coord, x, y, colorX, colorY, colors, signal, fs, xStep, heightScaling, st, prevFreq, midi, dur, inst, vol, c, freq, Omega, val, harmonic, coeff, newk, s, color;
 class Waveform {
     constructor(runtime) {
         this.runtime = runtime;

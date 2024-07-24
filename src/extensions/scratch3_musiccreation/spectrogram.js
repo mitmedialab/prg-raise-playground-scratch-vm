@@ -9,6 +9,9 @@ const letters = require('./letters');
 const symbols = require('./symbols');
 const { updateVariableIdentifiers } = require('../../util/variable-util');
 
+var midi, inst, dur, harmonic, pitch, k, coeff, hPitch, d, maxDuration, maxFreq, f, start, end, i, coord, x, y;
+
+
 class Spectrogram {
     constructor(runtime) {
         this.runtime = runtime;
@@ -214,19 +217,19 @@ class Spectrogram {
     }
 
     drawSpectrogram(args, util) {
-        freqs = [];
-        amps = [];
-        durs = [];
-        coeffs = [];
+        const freqs = [];
+        const amps = [];
+        const durs = [];
+        const coeffs = [];
         d = 0;
         this.setPenColorToColor(this.yellow, util);
-        for (i in this.noteList) {
+        for (let i in this.noteList) {
             midi = this.noteList[i][0];
             inst = this.noteList[i][2];
             dur = this.noteList[i][1];
             harmonic = this.harmonics[inst];
             pitch = 2 ** ((midi - 69) / 12) * 440;
-            for (i in harmonic) {
+            for (let i in harmonic) {
                 k = harmonic[i][0];
                 coeff = harmonic[i][1];
                 hPitch = pitch * k;
@@ -239,7 +242,7 @@ class Spectrogram {
         }
         maxDuration = d;
         maxFreq = Math.max(...freqs);
-        for (i in freqs) {
+        for (let i in freqs) {
             f = freqs[i] / (maxFreq + 5);
             d = durs[i];
             coeff = coeffs[i];

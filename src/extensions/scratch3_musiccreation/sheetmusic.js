@@ -9,7 +9,7 @@ const letters = require('./letters');
 const symbols = require('./symbols');
 const { updateVariableIdentifiers } = require('../../util/variable-util');
 
-var pitchToStaff, pitchToStaffBass, sharps, flats, harmonics, drawX;
+var pitchToStaff, pitchToStaffBass, sharps, flats, harmonics, drawX, xmid, ymid, up, sym, s, flip, initial, coord, x, y, startX, endX, startY, endY, yStep, xStep, freq, note, duration, symbolX, symbolY, volume, newX, newY, beats, signal, step, theta, rad, dotrad, xrad, yrad, sign, xOffset, scale, restX, restY, offset, newBeats, acc, staff, clef, adjusted, xmidTreble, ymidTreble, ymidBass;
 
 class SheetMusic {
     constructor(runtime) {
@@ -568,7 +568,7 @@ class SheetMusic {
         var beats = 0;
         var signal = this.convertSignalToMusicList(args, util);
 
-        for (i in signal) {
+        for (let i in signal) {
             log.log(signal[i]);
             note = signal[i][0];
             duration = signal[i][1];
@@ -633,7 +633,7 @@ class SheetMusic {
                 }
                 sym = this.symbols[volume];
                 initial = 0;
-                for (i in sym) {
+                for (let i in sym) {
                     s = sym[i];
                     this.drawSymbol(s, args, util, newX + initial, newY);
                     initial += this.spacing[volume][i];

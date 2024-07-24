@@ -9,6 +9,9 @@ const letters = require('./letters');
 const symbols = require('./symbols');
 const { updateVariableIdentifiers } = require('../../util/variable-util');
 
+var coord, x, y, colors, freqs, freq, amps, midi, inst, harmonic, pitch, k, coeff, hPitch, exists, f, fr, amp, maxFreq, maxAmp, ratio, ratioAmp, signal, staff, dur;
+
+
 class FFT {
     constructor(runtime) {
         this.runtime = runtime;
@@ -259,12 +262,12 @@ class FFT {
         this.setPenColorToColor(colors[1], util);
         freqs = [];
         amps = [];
-        for (i in this.noteList) {
+        for (let i in this.noteList) {
             midi = this.noteList[i][0];
             inst = this.noteList[i][2];
             harmonic = this.harmonics[inst];
             pitch = 2 ** ((midi - 69) / 12) * 440;
-            for (i in harmonic) {
+            for (let i in harmonic) {
                 k = harmonic[i][0];
                 coeff = harmonic[i][1];
                 hPitch = pitch * k;
@@ -286,7 +289,7 @@ class FFT {
         }
         maxFreq = Math.max(...freqs);
         maxAmp = Math.max(...amps);
-        for (i in freqs) {
+        for (let i in freqs) {
             freq = freqs[i];
             amp = amps[i];
             ratio = freq / maxFreq;

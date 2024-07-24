@@ -318,12 +318,12 @@ class VizHelpers {
     drawFFT(args, util) {
         freqs = [];
         amps = [];
-        for (i in this.noteList) {
+        for (let i in this.noteList) {
             midi = this.noteList[i][0];
             inst = this.noteList[i][2];
             harmonic = harmonics[inst];
             pitch = 2 ** ((midi - 69) / 12) * 440;
-            for (i in harmonic) {
+            for (let i in harmonic) {
                 k = harmonic[i][0];
                 coeff = harmonic[i][1];
                 hPitch = pitch * k;
@@ -345,7 +345,7 @@ class VizHelpers {
         }
         maxFreq = Math.max(...freqs);
         maxAmp = Math.max(...amps);
-        for (i in freqs) {
+        for (let i in freqs) {
             freq = freqs[i];
             amp = amps[i];
             ratio = freq / maxFreq;

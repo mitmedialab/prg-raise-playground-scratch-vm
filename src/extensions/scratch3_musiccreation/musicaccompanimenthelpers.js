@@ -9,7 +9,7 @@ const regeneratorRuntime = require("regenerator-runtime");
 const symbols = require('./symbols');
 const { time } = require('format-message');
 
-var TWINKLE_TWINKLE, music_rnn, music_vae;
+var TWINKLE_TWINKLE, music_rnn, music_vae, magentaNotes, notes, rnn_steps, rnn_temperature;
 
 /**
  * The instrument and drum sounds, loaded as static assets.

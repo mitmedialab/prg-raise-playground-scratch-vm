@@ -6,15 +6,21 @@ const Timer = require('../../util/timer');
 const log = require('../../util/log');
 const regeneratorRuntime = require("regenerator-runtime");
 
+var note, beats, durationSec, inst;
+
+
 /**
  * The instrument and drum sounds, loaded as static assets.
  * @type {object}
  */
 let assetData = {};
 
+
 try {
     assetData = require('./manifest');
+    console.log("ASSET DATA", assetData);
 } catch (e) {
+    throw new Error("WE CANNOT FIND THE ASSETS");
     // Non-webpack environment, don't worry about assets.
 }
 
