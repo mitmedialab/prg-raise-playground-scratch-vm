@@ -2697,6 +2697,42 @@ class Runtime extends EventEmitter {
         return loadCostume(costume.md5, costume, this)
     }
 
+    /**
+     * Event name for trigger the worskpace to update with a specified collection of new 'programatically added' blocks
+     * @const {string}
+     */
+    static get ADD_BLOCKS_TO_WORKSPACE() {
+        return 'ADD_BLOCKS_TO_WORKSPACE';
+    }
+
+    /**
+     * Try to retrieve the audio engine attached to this runtime
+     * @returns {Promise<import("scratch-audio/src/AudioEngine")>}
+     */
+    awaitAudioEngine() {
+        const maxAttempts = 5;
+        const attemptIntervalMs = 500;
+        const self = this;
+        return new Promise((resolve, reject) => {
+            let attempts = 0;
+            const interval = setInterval(() => {
+                const { audioEngine } = self;
+                if (audioEngine) {
+                    clearInterval(interval);
+                    resolve(audioEngine);
+                }
+                else if (++attempts > maxAttempts) {
+                    reject();
+                }
+            }, attemptIntervalMs); // (*)
+        })
+            .catch(new Error('No Audio Context Detected'));
+    }
+
+    addBlocksToWorkspace(xmlToAdd) {
+        this.emit(Runtime.ADD_BLOCKS_TO_WORKSPACE, xmlToAdd);
+    }
+
     /** PRG ADDITIONS END */
 }
 

@@ -1223,6 +1223,43 @@ class Blocks {
         // Update `topLevel` property on the top block.
         if (this._blocks[topBlockId]) this._blocks[topBlockId].topLevel = false;
     }
+
+    /** PRG ADDITION BEGIN */
+
+    /**
+     * Get all of the IDs of current top blocks
+     * @returns {string[]} array of Top Block IDs
+     */
+    getTopBlockIDs() {
+        return Object.keys(this._blocks).filter(id => this._blocks[id].topLevel);
+    }
+
+    /**
+     * 
+     * @param {string} ID 
+     */
+    isTopBlockID(ID) {
+        return this.getTopBlockIDs().includes(ID);
+    }
+
+    /**
+     * NOTE: Also returns true if baseID === aboveID
+     * @param {?string} baseID ID of block to check from.
+     * @param {?string} aboveID ID of block that may or may not be above the baseID block.
+     * @return {boolean} Whether or a block with id = aboveID is 'above' the baseID block
+     */
+    isBlockAbove(baseID, aboveID) {
+        if (baseID === aboveID) return true;
+        let block = this._blocks[baseID];
+        if (typeof block === 'undefined') return null;
+        while (block.parent !== null) {
+            block = this._blocks[block.parent];
+            if (block.id === aboveID) return true;
+        }
+        return false;
+    }
+
+    /** PRG ADDITION END */
 }
 
 /**

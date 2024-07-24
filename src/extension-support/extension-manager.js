@@ -36,6 +36,7 @@ const builtinExtensions = {
     arduinoRobot: () => require('../extensions/scratch3_arduinobot'),
     gizmoRobot: () => require('../extensions/scratch3_gizmo'),
     microbitRobot: () => require('../extensions/scratch3_microbot'),
+    musiccreation: () => require('../extensions/scratch3_musiccreation'),
     /** END PRG Additions */
 };
 
