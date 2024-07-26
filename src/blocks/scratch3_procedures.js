@@ -1,5 +1,5 @@
 class Scratch3ProcedureBlocks {
-    constructor (runtime) {
+    constructor(runtime) {
         /**
          * The runtime instantiating this block package.
          * @type {Runtime}
@@ -9,9 +9,9 @@ class Scratch3ProcedureBlocks {
 
     /**
      * Retrieve the block primitives implemented by this package.
-     * @return {object.<string, Function>} Mapping of opcode to Function.
+     * @return {Object.<string, Function>} Mapping of opcode to Function.
      */
-    getPrimitives () {
+    getPrimitives() {
         return {
             procedures_definition: this.definition,
             procedures_call: this.call,
@@ -20,11 +20,11 @@ class Scratch3ProcedureBlocks {
         };
     }
 
-    definition () {
+    definition() {
         // No-op: execute the blocks.
     }
 
-    call (args, util) {
+    call(args, util) {
         if (!util.stackFrame.executed) {
             const procedureCode = args.mutation.proccode;
             const paramNamesIdsAndDefaults = util.getProcedureParamNamesIdsAndDefaults(procedureCode);
@@ -55,7 +55,7 @@ class Scratch3ProcedureBlocks {
         }
     }
 
-    argumentReporterStringNumber (args, util) {
+    argumentReporterStringNumber(args, util) {
         const value = util.getParam(args.VALUE);
         if (value === null) {
             // When the parameter is not found in the most recent procedure
@@ -65,7 +65,7 @@ class Scratch3ProcedureBlocks {
         return value;
     }
 
-    argumentReporterBoolean (args, util) {
+    argumentReporterBoolean(args, util) {
         const value = util.getParam(args.VALUE);
         if (value === null) {
             // When the parameter is not found in the most recent procedure

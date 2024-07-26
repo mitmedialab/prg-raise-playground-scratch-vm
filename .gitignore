@@ -1,3 +1,12 @@
+# Generated content
+src/dist/globals.js
+
+# pnpm used at the root level
+package-lock.json
+
+# Typescript declaration files (which are generated)
+**/*.d.ts
+
 # Mac OS
 .DS_Store
 
