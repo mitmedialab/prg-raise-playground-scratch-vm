@@ -743,8 +743,11 @@ class Blocks {
             const oldParent = this._blocks[e.oldParent];
             if (typeof e.oldInput !== 'undefined' &&
                 oldParent.inputs[e.oldInput].block === e.id) {
-                // This block was connected to the old parent's input.
-                oldParent.inputs[e.oldInput].block = null;
+                // This block was connected to the old parent's input. We either
+                // want to restore the shadow block that previously occupied
+                // this input, or set it to null (which `.shadow` will be if
+                // there was no shadow previously)
+                oldParent.inputs[e.oldInput].block = oldParent.inputs[e.oldInput].shadow;
             } else if (oldParent.next === e.id) {
                 // This block was connected to the old parent's next connection.
                 oldParent.next = null;
