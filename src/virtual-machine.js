@@ -427,7 +427,7 @@ class VirtualMachine extends EventEmitter {
                         'Authorization': 'Bearer ' + authToken,
                     }
                 });
-                const text = await response.text();
+                const text = await response.arrayBuffer();
                 console.log("TEXT ", text);
                 resolve(this.loadProject(text));
             })
