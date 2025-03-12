@@ -336,6 +336,7 @@ class VirtualMachine extends EventEmitter {
                 const { SB1File, ValidationError } = require('scratch-sb1-converter');
 
                 try {
+                    console.log("INPUT", input);
                     const sb1 = new SB1File(input);
                     const json = sb1.json;
                     json.projectVersion = 2;
