@@ -312,6 +312,7 @@ class VirtualMachine extends EventEmitter {
      * @return {!Promise} Promise that resolves after targets are installed.
      */
     loadProject(input) {
+        console.log("LOADING", input);
         if (typeof input === 'object' && !(input instanceof ArrayBuffer) &&
             !ArrayBuffer.isView(input)) {
             // If the input is an object and not any ArrayBuffer
@@ -413,6 +414,7 @@ class VirtualMachine extends EventEmitter {
 
 
     downloadProjectFromURLDirect(url) {
+        console.log("URL", url);
         // Handle loading google drive files
         if (url.includes("googleapis.com")) {
             // get authToken using regex
@@ -425,7 +427,9 @@ class VirtualMachine extends EventEmitter {
                         'Authorization': 'Bearer ' + authToken,
                     }
                 });
-                resolve(this.loadProject(await response.text()));
+                const text = await response.text();
+                console.log("TEXT ", text);
+                resolve(this.loadProject(text));
             })
         } else if (url.includes("dropbox.com")) {
             // Handle loading dropbox links
