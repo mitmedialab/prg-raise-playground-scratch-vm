@@ -312,7 +312,6 @@ class VirtualMachine extends EventEmitter {
      * @return {!Promise} Promise that resolves after targets are installed.
      */
     loadProject(input) {
-        console.log("LOADING", input);
         if (typeof input === 'object' && !(input instanceof ArrayBuffer) &&
             !ArrayBuffer.isView(input)) {
             // If the input is an object and not any ArrayBuffer
@@ -337,7 +336,6 @@ class VirtualMachine extends EventEmitter {
                 const { SB1File, ValidationError } = require('scratch-sb1-converter');
 
                 try {
-                    console.log("INPUT", input);
                     const sb1 = new SB1File(input);
                     const json = sb1.json;
                     json.projectVersion = 2;
@@ -414,7 +412,6 @@ class VirtualMachine extends EventEmitter {
 
 
     downloadProjectFromURLDirect(url) {
-        console.log("URL", url);
         // Handle loading google drive files
         if (url.includes("googleapis.com")) {
             // get authToken using regex
@@ -427,9 +424,8 @@ class VirtualMachine extends EventEmitter {
                         'Authorization': 'Bearer ' + authToken,
                     }
                 });
-                const text = await response.arrayBuffer();
-                console.log("TEXT ", text);
-                resolve(this.loadProject(text));
+                const buffer = await response.arrayBuffer();
+                resolve(this.loadProject(buffer));
             })
         } else if (url.includes("dropbox.com")) {
             // Handle loading dropbox links
