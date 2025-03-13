@@ -424,7 +424,8 @@ class VirtualMachine extends EventEmitter {
                         'Authorization': 'Bearer ' + authToken,
                     }
                 });
-                resolve(this.loadProject(await response.text()));
+                const buffer = await response.arrayBuffer();
+                resolve(this.loadProject(buffer));
             })
         } else if (url.includes("dropbox.com")) {
             // Handle loading dropbox links
