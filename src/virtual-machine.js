@@ -1184,6 +1184,10 @@ class VirtualMachine extends EventEmitter {
         this.runtime.attachRenderer(renderer);
     }
 
+    createApplication() {
+        this.runtime.createApplication();
+    }
+
     /**
      * @returns {RenderWebGL} The renderer attached to the vm
      */

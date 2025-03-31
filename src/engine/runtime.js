@@ -2,6 +2,32 @@ const EventEmitter = require('events');
 const { OrderedMap } = require('immutable');
 const uuid = require('uuid');
 
+const {
+    Application,
+    Assets,
+    Sprite,
+    Texture,
+    Renderer,
+    Container,
+    Graphics,
+  } = require("@pixi/webworker");
+  const {
+    CameraOrbitControl,
+    LightingEnvironment,
+    ImageBasedLighting,
+    Model,
+    Light,
+    LightType,
+    ShadowCastingLight,
+    ShadowQuality,
+    StandardMaterial,
+    Mesh3D,
+    Camera,
+    Color,
+    StandardMaterialTexture,
+    Quaternion,
+  } = require("pixi3d/pixi7");
+
 const ArgumentType = require('../extension-support/argument-type');
 const Blocks = require('./blocks');
 const BlocksRuntimeCache = require('./blocks-runtime-cache');
@@ -1617,6 +1643,73 @@ class Runtime extends EventEmitter {
     attachRenderer(renderer) {
         this.renderer = renderer;
         this.renderer.setLayerGroupOrdering(StageLayering.LAYER_GROUPS);
+    }
+
+    createApplication() {
+        const pixiApp = new Application({
+            context: this.renderer._gl,
+            backgroundColor: 0xffffff,
+            backgroundAlpha: 0,
+            antialias: true,
+            preserveDrawingBuffer: false
+        });
+    
+        // // Add a 3D cube using Pixi3D
+        const cube = Mesh3D.createCube();
+        cube.position.set(0, 0, -2);
+    
+        // material.baseColorTexture = new Texture(texture.baseTexture);
+        // cube.material = new StandardMaterial();
+      
+        // cube.scale.set(0.5, 0.5, 0.5);
+        pixiApp.stage.addChild(cube);
+    
+        // const plane = Mesh3D.createPlane();
+        // pixiApp.stage.addChild(plane);
+    
+    
+        let directionalLight = new Light();
+        directionalLight.intensity = 10;
+        directionalLight.type = LightType.directional;
+        directionalLight.rotationQuaternion.setEulerAngles(25, 120, 0);
+        LightingEnvironment.main.lights.push(directionalLight);
+    
+        let shadowCastingLight = new ShadowCastingLight(
+            pixiApp.renderer,
+            directionalLight,
+            { shadowTextureSize: 1024, quality: ShadowQuality.medium },
+        );
+        shadowCastingLight.softness = 2;
+        shadowCastingLight.shadowArea = 15;
+    
+        let pipeline = pixiApp.renderer.plugins.pipeline;
+        pipeline.enableShadows(cube, shadowCastingLight);
+    
+        // // Adjust the camera
+        // //Camera.main.position.set(0, 0, 5);
+    
+        // // Debug: Check if cube is added
+        console.log(pixiApp.stage.children);
+    
+        function multiplyQuaternions(q1, q2) {
+            const result = {
+                x: q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y,
+                y: q1.w * q2.y + q1.y * q2.w + q1.z * q2.x - q1.x * q2.z,
+                z: q1.w * q2.z + q1.z * q2.w + q1.x * q2.y - q1.y * q2.x,
+                w: q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z,
+            };
+            const res = new Quaternion(result.x, result.y, result.z, result.w);
+            return res;
+        }
+                    
+    
+        //Animate the cube manually
+        function animate() {
+            //cube.rotationQuaternion = multiplyQuaternions(cube.rotationQuaternion, Quaternion.fromEuler(0.5, 0.5, 0));
+            pixiApp.renderer.render(pixiApp.stage); // Force Pixi3D to render
+            requestAnimationFrame(animate);
+        }
+        animate();
     }
 
     /**
