@@ -1653,44 +1653,45 @@ class Runtime extends EventEmitter {
             antialias: true,
             preserveDrawingBuffer: false
         });
-    
-        // // Add a 3D cube using Pixi3D
+        
+        //Add a 3D cube using Pixi3D
         const cube = Mesh3D.createCube();
         cube.position.set(0, 0, -2);
-    
-        // material.baseColorTexture = new Texture(texture.baseTexture);
-        // cube.material = new StandardMaterial();
-      
-        // cube.scale.set(0.5, 0.5, 0.5);
+        cube.material.baseColor = new Color(1, 0, 1);
+        cube.scale.set(0.5, 0.5, 0.5);
         pixiApp.stage.addChild(cube);
-    
-        // const plane = Mesh3D.createPlane();
-        // pixiApp.stage.addChild(plane);
-    
-    
+        
+        const plane = Mesh3D.createPlane();
+        plane.material = new StandardMaterial();
+        plane.material.baseColor = new Color(1, 0, 0); // Red color
+        plane.position.set(0, 0, -2);
+        //plane.scale.set(0.1, 0.1, 0.1);
+        pixiApp.stage.addChild(plane);
+        
+        
         let directionalLight = new Light();
-        directionalLight.intensity = 10;
-        directionalLight.type = LightType.directional;
-        directionalLight.rotationQuaternion.setEulerAngles(25, 120, 0);
-        LightingEnvironment.main.lights.push(directionalLight);
-    
-        let shadowCastingLight = new ShadowCastingLight(
-            pixiApp.renderer,
-            directionalLight,
-            { shadowTextureSize: 1024, quality: ShadowQuality.medium },
-        );
-        shadowCastingLight.softness = 2;
-        shadowCastingLight.shadowArea = 15;
-    
-        let pipeline = pixiApp.renderer.plugins.pipeline;
-        pipeline.enableShadows(cube, shadowCastingLight);
-    
-        // // Adjust the camera
-        // //Camera.main.position.set(0, 0, 5);
-    
-        // // Debug: Check if cube is added
+                    directionalLight.intensity = 10;
+                    directionalLight.type = LightType.directional;
+                    directionalLight.rotationQuaternion.setEulerAngles(25, 120, 0);
+                    LightingEnvironment.main.lights.push(directionalLight);
+        
+                    let shadowCastingLight = new ShadowCastingLight(
+                        pixiApp.renderer,
+                        directionalLight,
+                        { shadowTextureSize: 1024, quality: ShadowQuality.medium },
+                    );
+                    shadowCastingLight.softness = 2;
+                    shadowCastingLight.shadowArea = 15;
+        
+                    let pipeline = pixiApp.renderer.plugins.pipeline;
+                    pipeline.enableShadows(cube, shadowCastingLight);
+        
+        // Adjust the camera
+        //Camera.main.position.set(0, 0, 5);
+        
+        // Debug: Check if cube is added
         console.log(pixiApp.stage.children);
-    
+        
         function multiplyQuaternions(q1, q2) {
             const result = {
                 x: q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y,
@@ -1702,10 +1703,10 @@ class Runtime extends EventEmitter {
             return res;
         }
                     
-    
+        
         //Animate the cube manually
         function animate() {
-            //cube.rotationQuaternion = multiplyQuaternions(cube.rotationQuaternion, Quaternion.fromEuler(0.5, 0.5, 0));
+            cube.rotationQuaternion = multiplyQuaternions(cube.rotationQuaternion, Quaternion.fromEuler(0.5, 0.5, 0));
             pixiApp.renderer.render(pixiApp.stage); // Force Pixi3D to render
             requestAnimationFrame(animate);
         }
