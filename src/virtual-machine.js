@@ -1184,8 +1184,8 @@ class VirtualMachine extends EventEmitter {
         this.runtime.attachRenderer(renderer);
     }
 
-    createApplication() {
-        this.runtime.createApplication();
+    getPixi3D() {
+        this.runtime.getPixi3D();
     }
 
     /**
