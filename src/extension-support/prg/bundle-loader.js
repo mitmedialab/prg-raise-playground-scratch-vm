@@ -66,24 +66,62 @@ const getEndPoint = (filename) => `extension-bundles/${filename}.js`;
 
 const getCommonObject = (id) => window[id];
 
+const findAuxiliaryJson = (id) => {
+  var host = location.href.split("?")[0];
+    host = host.endsWith("/") ? host.slice(0, -1) : host;
+    const auxiliaryPath = `${host}/static/${getEndPoint(AuxiliaryExtensionInfo)}`;
+    fetch(auxiliaryPath)
+    .then(response => {
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      return response.text();
+    })
+    .then(scriptText => {
+      const regex = new RegExp(`var\\s+${AuxiliaryExtensionInfo}\\s*=\\s*(\\{[\\s\\S]*?\\});`);
+      const match = scriptText.match(regex);
+
+      if (match && match[1]) {
+        try {
+          const loadedJSON = JSON.parse(match[1]);
+          if (loadedJSON[id]) {
+            window['AuxiliaryExtensionInfo'][id] = loadedJSON[id];
+          }
+        } catch (err) {
+          console.error('Failed to parse JSON:', err);
+        }
+      }
+      
+    })
+    .catch(error => {
+      console.error(`Failed to fetch JSON for ${id}:`, error);
+    });
+}
+
 const validateCommonObject = (id) => getCommonObject(id)
   ? console.log(`'${id}' succesfully loaded!`)
   : console.error(`Could not find '${id}' object after loading script`);
 
-const untilCommonObjects = (...IDs) => Promise.all(
-  IDs.map(id => getCommonObject(id)
+const untilCommonObjects = (foundId, IDs) => Promise.all(
+  IDs.map(id => {
+    if (getCommonObject(id)) {
+      if (id === AuxiliaryExtensionInfo) {
+        findAuxiliaryJson(foundId);
+      }
+      return; // Already loaded
+    }
+    getCommonObject(id)
     ? Promise.resolve()
     : untilScriptLoaded(getEndPoint(id),
       {
         onLoad: () => validateCommonObject(id),
         onError: () => { throw new Error(`Could not load ${id}`) }
       }
-    ))
+    )
+  })
 );
 
 const tryImportExtensionBundle = async (id, callbacks) => {
   try {
-    await untilCommonObjects(FrameworkID, AuxiliaryExtensionInfo);
+    await untilCommonObjects(id, [FrameworkID, AuxiliaryExtensionInfo]);
     await untilScriptLoaded(getEndPoint(id), callbacks);
     return true;
   }
