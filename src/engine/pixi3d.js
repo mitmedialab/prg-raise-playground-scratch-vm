@@ -22,6 +22,7 @@ const {
     Color,
     StandardMaterialTexture,
     Quaternion,
+    glTFAsset,
   } = require("pixi3d/pixi7");
 
   class Pixi3D {
@@ -107,6 +108,17 @@ const {
         this.pipeline.enableShadows(plane, this.shadowCastingLight);
     }
 
+    multiplyQuaternions(q1, q2) {
+        const result = {
+            x: q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y,
+            y: q1.w * q2.y + q1.y * q2.w + q1.z * q2.x - q1.x * q2.z,
+            z: q1.w * q2.z + q1.z * q2.w + q1.x * q2.y - q1.y * q2.x,
+            w: q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z,
+        };
+        const res = new Quaternion(result.x, result.y, result.z, result.w);
+        return res;
+    }
+
     createSphere(position, scale, color) {
         const sphere = Mesh3D.createSphere();
         sphere.material = new StandardMaterial();
@@ -118,6 +130,96 @@ const {
         this.pixiApp.stage.addChild(sphere);
 
         this.pipeline.enableShadows(sphere, this.shadowCastingLight);
+    }
+
+    async loadGLBModel(arrayBuffer) {
+        const dataView = new DataView(arrayBuffer);
+      
+        const magic = dataView.getUint32(0, true);
+        if (magic !== 0x46546C67) throw new Error("Not a valid GLB file");
+      
+        const version = dataView.getUint32(4, true);
+        if (version !== 2) throw new Error("Unsupported GLB version");
+      
+        const totalLength = dataView.getUint32(8, true);
+      
+        // --- First chunk: JSON ---
+        const jsonChunkLength = dataView.getUint32(12, true);
+        const jsonChunkType = dataView.getUint32(16, true);
+        if (jsonChunkType !== 0x4E4F534A) throw new Error("Expected JSON chunk");
+      
+        const jsonText = new TextDecoder().decode(
+          new Uint8Array(arrayBuffer, 20, jsonChunkLength)
+        );
+        const descriptor = JSON.parse(jsonText);
+      
+        // --- Second chunk: BIN ---
+        const binChunkHeader = 20 + jsonChunkLength;
+        const binChunkLength = dataView.getUint32(binChunkHeader, true);
+        const binChunkType = dataView.getUint32(binChunkHeader + 4, true);
+        if (binChunkType !== 0x004E4942) throw new Error("Expected BIN chunk");
+      
+        const binChunkOffset = binChunkHeader + 8;
+        const binBuffer = arrayBuffer.slice(binChunkOffset, binChunkOffset + binChunkLength);
+      
+        // --- Images ---
+        const images = [];
+        if (descriptor.images && descriptor.bufferViews) {
+          for (const image of descriptor.images) {
+            const view = descriptor.bufferViews[image.bufferView];
+            const mimeType = image.mimeType || "image/png";
+      
+            const byteOffset = view.byteOffset || 0;
+            const byteLength = view.byteLength;
+            if (byteOffset + byteLength > binBuffer.byteLength) {
+              console.warn("Image buffer view out of bounds:", image);
+              images.push(undefined);
+              continue;
+            }
+      
+            const imageData = new Uint8Array(binBuffer, byteOffset, byteLength);
+            const blob = new Blob([imageData], { type: mimeType });
+      
+            try {
+              const bitmap = await createImageBitmap(blob);
+              const texture = Texture.from(bitmap);
+              images.push(texture);
+            } catch (e) {
+              console.error("Image decode failed", e);
+              images.push(undefined); // Keep index alignment
+            }
+          }
+        }
+      
+        const asset = new glTFAsset(descriptor, [binBuffer], images);
+        const model = Model.from(asset);
+        return model;
+      }
+      
+      
+
+    async importGltf(url, position, scale) {
+        const model = await this.loadGLBModel(url);
+        // Set position
+        model.position.set(position[0], position[1], position[2]);
+        
+        // Set scale (uniform scaling for simplicity)
+        model.scale.set(scale, scale, scale);
+
+        const quad1 = Quaternion.fromEuler(20, 0, 0);
+        const quad2 = Quaternion.fromEuler(0, 90, 0);
+        // Then rotate around the y-axis
+        const permanentQuad = this.multiplyQuaternions(quad1, quad2);
+        model.rotationQuaternion = permanentQuad;
+        
+        // Optionally set rotation if needed
+        // model.rotationQuaternion = Quaternion.fromEuler(0, 0, 0);
+
+        // Add model to the scene
+        this.pixiApp.stage.addChild(model);
+
+        // Enable shadows for the model
+        this.pipeline.enableShadows(model, this.shadowCastingLight);
     }
 
     // createCylinder(position, color, radius, height) {
