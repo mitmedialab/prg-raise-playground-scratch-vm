@@ -222,35 +222,6 @@ const {
         this.pipeline.enableShadows(model, this.shadowCastingLight);
     }
 
-    // createCylinder(position, color, radius, height) {
-    //     const cylinder = Mesh3D.createCylinder();
-    //     // new StandardMaterial(), {radiusTop: radius, radiusBottom: radius, height: height}
-    //     cylinder.material.baseColor = new Color(color[0], color[1], color[2]); // Red color
-    //     cylinder.position.set(position[0], position[1], position[2]);
-    //     //plane.scale.set(0.1, 0.1, 0.1);
-    //     cylinder.rotationQuaternion = Quaternion.fromEuler(90, 0, 0);
-    //     this.pixiApp.stage.addChild(cylinder);
-
-    //     this.pipeline.enableShadows(cylinder, this.shadowCastingLight);
-    //     if (true) {
-    //         const animate = () => {
-    //             function multiplyQuaternions(q1, q2) {
-    //                 const result = {
-    //                     x: q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y,
-    //                     y: q1.w * q2.y + q1.y * q2.w + q1.z * q2.x - q1.x * q2.z,
-    //                     z: q1.w * q2.z + q1.z * q2.w + q1.x * q2.y - q1.y * q2.x,
-    //                     w: q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z,
-    //                 };
-    //                 const res = new Quaternion(result.x, result.y, result.z, result.w);
-    //                 return res;
-    //             }
-    //             cylinder.rotationQuaternion = multiplyQuaternions(cylinder.rotationQuaternion, Quaternion.fromEuler(0.5, 0.5, 0));
-    //             this.pixiApp.renderer.render(this.pixiApp.stage); // Force Pixi3D to render
-    //             requestAnimationFrame(animate);
-    //         }
-    //         animate();
-    //      }
-    // }
   }
 
   module.exports = Pixi3D;
