@@ -102,10 +102,8 @@ const validateCommonObject = (id) => getCommonObject(id)
 
 const untilCommonObjects = (foundId, IDs) => Promise.all(
   IDs.map(id => {
-    if (getCommonObject(id)) {
-      if (id === AuxiliaryExtensionInfo) {
-        findAuxiliaryJson(foundId);
-      }
+    if (getCommonObject(id) && id === AuxiliaryExtensionInfo) {
+      findAuxiliaryJson(foundId);
       return; // Already loaded
     }
     getCommonObject(id)
