@@ -645,6 +645,8 @@ class VirtualMachine extends EventEmitter {
      * @return {!Promise} Promise that resolves after targets are installed.
      */
     addSprite(input) {
+        console.log("UPLOADING SPRITE", input);
+        // PIXI WORK: ATTACH EVENT LISTENERS
         const errorPrefix = 'Sprite Upload Error:';
         if (typeof input === 'object' && !(input instanceof ArrayBuffer) &&
             !ArrayBuffer.isView(input)) {

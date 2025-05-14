@@ -1544,7 +1544,7 @@ class Runtime extends EventEmitter {
     }
 
     getPixi3D() {
-        return new Pixi3D(this.renderer._gl)
+        return this.pixi3d;
     }
 
     /**
@@ -1621,6 +1621,7 @@ class Runtime extends EventEmitter {
      */
     attachRenderer(renderer) {
         this.renderer = renderer;
+        this.pixi3d = new Pixi3D(this.renderer._gl);
         this.renderer.setLayerGroupOrdering(StageLayering.LAYER_GROUPS);
     }
 

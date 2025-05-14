@@ -28,6 +28,7 @@ const {
   class Pixi3D {
     constructor(gl) {
         this.gl = gl;
+        this.applicationCreated = false;
     }
 
     
@@ -56,6 +57,8 @@ const {
         this.shadowCastingLight.shadowArea = 15;
 
         this.pipeline = this.pixiApp.renderer.plugins.pipeline;
+
+        this.applicationCreated = true;
         
 
         // function animate() {
@@ -223,5 +226,17 @@ const {
     }
 
   }
+
+  // EVENT_TARGET_VISUAL_CHANGE
+  // setXY - x/y change
+  // setDirection - this.direction
+  // setVisible - this.visible
+  // setSize - this.size
+  // setEffect - ?
+  // setCostume - this.getCostumes()[this.currentCostume];
+  // setRotationStyle - this.rotationStyle
+  // EVENT_TARGET_MOVED
+  // setXY - this.x/this.y
+
 
   module.exports = Pixi3D;
