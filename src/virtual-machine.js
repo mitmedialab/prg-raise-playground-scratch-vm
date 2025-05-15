@@ -23,6 +23,7 @@ const newBlockIds = require('./util/new-block-ids');
 const { loadCostume } = require('./import/load-costume.js');
 const { loadSound } = require('./import/load-sound.js');
 const { serializeSounds, serializeCostumes } = require('./serialization/serialize-assets');
+const Rendered3DTarget = require('./sprites/rendered-3d-target.js');
 require('canvas-toBlob');
 
 const RESERVED_NAMES = ['_mouse_', '_stage_', '_edge_', '_myself_', '_random_'];
@@ -592,7 +593,7 @@ class VirtualMachine extends EventEmitter {
      * @returns {Promise} resolved once targets have been installed
      */
     installTargets(targets, extensions, wholeProject, fullJSON) {
-
+        console.log("TARGETS", targets);
         /** PRG ADDITION BEGIN */
         const { extensionManager } = this;
         const extensionPromises = Array.from(extensions.extensionIDs).map(async extensionID => {
@@ -644,9 +645,19 @@ class VirtualMachine extends EventEmitter {
      * @param {string | object} input A json string, object, or ArrayBuffer representing the project to load.
      * @return {!Promise} Promise that resolves after targets are installed.
      */
-    addSprite(input) {
+    async addSprite(input, attachedPixi) {
         console.log("UPLOADING SPRITE", input);
+        // Check if input is glb
+        // If so, replace input with dummy input and set flag
         // PIXI WORK: ATTACH EVENT LISTENERS
+        let model = null
+        if (attachedPixi) {
+            console.log(attachedPixi.buffer);
+            if (!this.runtime.pixi3d.applicationCreated) {
+                this.runtime.pixi3d.createApplication();
+            }
+            model = await this.runtime.pixi3d.importGltf(attachedPixi.buffer, [0,0,0], 1).then();
+        }
         const errorPrefix = 'Sprite Upload Error:';
         if (typeof input === 'object' && !(input instanceof ArrayBuffer) &&
             !ArrayBuffer.isView(input)) {
@@ -670,14 +681,25 @@ class VirtualMachine extends EventEmitter {
             });
         });
 
+        console.log("made it?", validationPromise);
+
         return validationPromise
             .then(validatedInput => {
+                console.log("input", validatedInput);
                 const projectVersion = validatedInput[0].projectVersion;
+                console.log(projectVersion);
                 if (projectVersion === 2) {
                     return this._addSprite2(validatedInput[0], validatedInput[1]);
                 }
                 if (projectVersion === 3) {
-                    return this._addSprite3(validatedInput[0], validatedInput[1]);
+                    // if flag is true, add glb
+                    if (attachedPixi) {
+                        console.log("MODEL", model);
+                        return this._addGlb(model, validatedInput[0], validatedInput[1])
+                    } else {
+                        return this._addSprite3(validatedInput[0], validatedInput[1]);
+                    }
+                    
                 }
                 // TODO: reject with an Error (possible breaking API change!)
                 // eslint-disable-next-line prefer-promise-reject-errors
@@ -685,6 +707,16 @@ class VirtualMachine extends EventEmitter {
             })
             .then(() => this.runtime.emitProjectChanged())
             .catch(error => {
+                console.log("error", error);
+                console.log(typeof error);
+                console.log(error.includes("glTF"));
+                if (error.includes("glTF")) {
+                    console.log("adding glb", model);
+                    this._addGlb();
+                    return Promise.resolve("hm");
+                } else {
+                    console.log("hm,m");
+                }
                 // Intentionally rejecting here (want errors to be handled by caller)
                 if (Object.prototype.hasOwnProperty.call(error, 'validationError')) {
                     return Promise.reject(JSON.stringify(error));
@@ -710,6 +742,20 @@ class VirtualMachine extends EventEmitter {
                 this.installTargets(targets, extensions, false));
     }
 
+    _addGlb(model, sprite, zip) {
+        // Game plan - add sprite as normal
+        // Create rendered3d target with instance of anchor sprite
+        // in rendered3d target, add event listeners
+        const sb3 = require('./serialization/sb3');
+        return sb3
+            .deserialize(sprite, this.runtime, zip, true)
+            .then(({ targets, extensions }) => {
+            console.log("UPLOADING");
+            let target = targets[0];
+            target = new Rendered3DTarget(model, target, this.runtime);
+            this.installTargets(targets, extensions, false)
+        });
+    }
     /**
      * Add a single sb3 sprite.
      * @param {object} sprite Object rperesenting 3.0 sprite to be added.
@@ -721,7 +767,10 @@ class VirtualMachine extends EventEmitter {
         const sb3 = require('./serialization/sb3');
         return sb3
             .deserialize(sprite, this.runtime, zip, true)
-            .then(({ targets, extensions }) => this.installTargets(targets, extensions, false));
+            .then(({ targets, extensions }) => {
+                console.log("UPLOADING");
+                this.installTargets(targets, extensions, false)
+        });
     }
 
     /**

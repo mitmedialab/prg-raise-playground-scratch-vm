@@ -198,6 +198,13 @@ const {
         const model = Model.from(asset);
         return model;
       }
+
+      setXY(model, x, y) {
+        console.log("model", model);
+        console.log("model position", model.position)
+        model.position.set(x*0.01, y*0.01, model.position.z);
+        console.log("model position", model.position)
+      }
       
       
 
@@ -214,6 +221,7 @@ const {
         // Then rotate around the y-axis
         const permanentQuad = this.multiplyQuaternions(quad1, quad2);
         model.rotationQuaternion = permanentQuad;
+        model.position.set(0, 0, 0);
         
         // Optionally set rotation if needed
         // model.rotationQuaternion = Quaternion.fromEuler(0, 0, 0);
@@ -223,6 +231,7 @@ const {
 
         // Enable shadows for the model
         this.pipeline.enableShadows(model, this.shadowCastingLight);
+        return model;
     }
 
   }
