@@ -324,6 +324,12 @@ class Blocks {
                 }
                 break;
             }
+            case 'click':
+                // UI event: clicked scripts toggle in the runtime.
+                if (e.targetType === 'block') {
+                    this.runtime.toggleScript(this.getTopLevelScript(e.blockId), {stackClick: true});
+                }
+                break;
             case 'change':
                 this.changeBlock({
                     id: e.blockId,
@@ -422,11 +428,12 @@ class Blocks {
                 this.emitProjectChanged();
                 break;
             }
+            case 'block_comment_create':
             case 'comment_create':
                 if (this.runtime.getEditingTarget()) {
                     const currTarget = this.runtime.getEditingTarget();
-                    currTarget.createComment(e.commentId, e.blockId, e.text,
-                        e.xy.x, e.xy.y, e.width, e.height, e.minimized);
+                    currTarget.createComment(e.commentId, e.blockId, '',
+                        e.json.x, e.json.y, e.json.width, e.json.height, false);
 
                     if (currTarget.comments[e.commentId].x === null &&
                         currTarget.comments[e.commentId].y === null) {
@@ -436,12 +443,13 @@ class Blocks {
                         // comments, then the auto positioning should have taken place.
                         // Update the x and y position of these comments to match the
                         // one from the event.
-                        currTarget.comments[e.commentId].x = e.xy.x;
-                        currTarget.comments[e.commentId].y = e.xy.y;
+                        currTarget.comments[e.commentId].x = e.json.x;
+                        currTarget.comments[e.commentId].y = e.json.y;
                     }
                 }
                 this.emitProjectChanged();
                 break;
+            case 'block_comment_change':
             case 'comment_change':
                 if (this.runtime.getEditingTarget()) {
                     const currTarget = this.runtime.getEditingTarget();
@@ -450,26 +458,16 @@ class Blocks {
                         return;
                     }
                     const comment = currTarget.comments[e.commentId];
-                    const change = e.newContents_;
-                    if (Object.prototype.hasOwnProperty.call(change, 'minimized')) {
-                        comment.minimized = change.minimized;
-                    }
-                    if (Object.prototype.hasOwnProperty.call(change, 'width') &&
-                        Object.prototype.hasOwnProperty.call(change, 'height')) {
-                        comment.width = change.width;
-                        comment.height = change.height;
-                    }
-                    if (Object.prototype.hasOwnProperty.call(change, 'text')) {
-                        comment.text = change.text;
-                    }
+                    comment.text = e.newContents_;
                     this.emitProjectChanged();
                 }
                 break;
+            case 'block_comment_move':
             case 'comment_move':
                 if (this.runtime.getEditingTarget()) {
                     const currTarget = this.runtime.getEditingTarget();
                     if (currTarget && !Object.prototype.hasOwnProperty.call(currTarget.comments, e.commentId)) {
-                        log.warn(`Cannot change comment with id ${e.commentId} because it does not exist.`);
+                        log.warn(`Cannot move comment with id ${e.commentId} because it does not exist.`);
                         return;
                     }
                     const comment = currTarget.comments[e.commentId];
@@ -480,6 +478,34 @@ class Blocks {
                     this.emitProjectChanged();
                 }
                 break;
+            case 'block_comment_collapse':
+            case 'comment_collapse':
+                if (this.runtime.getEditingTarget()) {
+                    const currTarget = this.runtime.getEditingTarget();
+                    if (currTarget && !Object.prototype.hasOwnProperty.call(currTarget.comments, e.commentId)) {
+                        log.warn(`Cannot collapse comment with id ${e.commentId} because it does not exist.`);
+                        return;
+                    }
+                    const comment = currTarget.comments[e.commentId];
+                    comment.minimized = e.newCollapsed;
+                    this.emitProjectChanged();
+                }
+                break;
+            case 'block_comment_resize':
+            case 'comment_resize':
+                if (this.runtime.getEditingTarget()) {
+                    const currTarget = this.runtime.getEditingTarget();
+                    if (currTarget && !Object.prototype.hasOwnProperty.call(currTarget.comments, e.commentId)) {
+                        log.warn(`Cannot resize comment with id ${e.commentId} because it does not exist.`);
+                        return;
+                    }
+                    const comment = currTarget.comments[e.commentId];
+                    comment.width = e.newSize.width;
+                    comment.height = e.newSize.height;
+                    this.emitProjectChanged();
+                }
+                break;
+            case 'block_comment_delete':
             case 'comment_delete':
                 if (this.runtime.getEditingTarget()) {
                     const currTarget = this.runtime.getEditingTarget();
@@ -717,8 +743,11 @@ class Blocks {
             const oldParent = this._blocks[e.oldParent];
             if (typeof e.oldInput !== 'undefined' &&
                 oldParent.inputs[e.oldInput].block === e.id) {
-                // This block was connected to the old parent's input.
-                oldParent.inputs[e.oldInput].block = null;
+                // This block was connected to the old parent's input. We either
+                // want to restore the shadow block that previously occupied
+                // this input, or set it to null (which `.shadow` will be if
+                // there was no shadow previously)
+                oldParent.inputs[e.oldInput].block = oldParent.inputs[e.oldInput].shadow;
             } else if (oldParent.next === e.id) {
                 // This block was connected to the old parent's next connection.
                 oldParent.next = null;

@@ -130,6 +130,7 @@ class ExtensionManager {
      * @param {string} extensionId - the ID of an internal extension
      */
     async loadExtensionIdSync(extensionId) {
+        
         const extension = await tryRetrieveExtensionConstructor(extensionId);
 
         if (!extension) return log.warn(`Could not find extension ${extensionId} in the built in extensions.`);
@@ -153,6 +154,8 @@ class ExtensionManager {
      * @returns {Promise} resolved once the extension is loaded and initialized or rejected on failure
      */
     async loadExtensionURL(extensionURL) {
+        console.log("LOADING???");
+        console.log(extensionURL);
         const extension = await tryRetrieveExtensionConstructor(extensionURL);
 
         if (extension) {
@@ -249,6 +252,7 @@ class ExtensionManager {
      * @returns {string} The name of the registered extension service
      */
     _registerInternalExtension(extensionObject) {
+        console.log("HEKO")
         const extensionInfo = extensionObject.getInfo();
         const fakeWorkerId = this.nextExtensionWorker++;
         const serviceName = `extension_${fakeWorkerId}_${extensionInfo.id}`;
@@ -265,6 +269,7 @@ class ExtensionManager {
      */
     _registerExtensionInfo(serviceName, extensionInfo) {
         extensionInfo = this._prepareExtensionInfo(serviceName, extensionInfo);
+        console.log("REGISTER 1");
         dispatch.call('runtime', '_registerExtensionPrimitives', extensionInfo).catch(e => {
             log.error(`Failed to register primitives for extension on service ${serviceName}:`, e);
         });
