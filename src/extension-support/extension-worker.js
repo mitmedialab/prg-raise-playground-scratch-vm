@@ -33,6 +33,7 @@ class ExtensionWorker {
     }
 
     register (extensionObject) {
+        console.log("REGISTERING??");
         const extensionId = this.nextExtensionId++;
         this.extensions.push(extensionObject);
         const serviceName = `extension.${this.workerId}.${extensionId}`;
