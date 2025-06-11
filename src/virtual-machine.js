@@ -656,7 +656,7 @@ class VirtualMachine extends EventEmitter {
             if (!this.runtime.pixi3d.applicationCreated) {
                 this.runtime.pixi3d.createApplication();
             }
-            model = await this.runtime.pixi3d.importGltf(attachedPixi.buffer, [0,0,0], 1).then();
+            model = await this.runtime.pixi3d.importGltf(attachedPixi.buffer, [0,0,0], 1);
         }
         const errorPrefix = 'Sprite Upload Error:';
         if (typeof input === 'object' && !(input instanceof ArrayBuffer) &&

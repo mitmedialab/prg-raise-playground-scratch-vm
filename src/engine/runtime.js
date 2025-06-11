@@ -1622,6 +1622,7 @@ class Runtime extends EventEmitter {
     attachRenderer(renderer) {
         this.renderer = renderer;
         this.pixi3d = new Pixi3D(this.renderer._gl);
+        console.log("INITIALIZED");
         this.renderer.setLayerGroupOrdering(StageLayering.LAYER_GROUPS);
     }
 

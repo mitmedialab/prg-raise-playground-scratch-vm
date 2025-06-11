@@ -6,6 +6,7 @@ const {
     Renderer,
     Container,
     Graphics,
+    WRAP_MODES
   } = require("@pixi/webworker");
   const {
     CameraOrbitControl,
@@ -33,7 +34,7 @@ const {
 
     
 
-    createApplication() {
+    async createApplication() {
         this.pixiApp = new Application({
             context: this.gl,
             backgroundColor: 0xffffff,
@@ -45,7 +46,7 @@ const {
         let directionalLight = new Light();
         directionalLight.intensity = 10;
         directionalLight.type = LightType.directional;
-        directionalLight.rotationQuaternion.setEulerAngles(25, 120, 0);
+        directionalLight.rotationQuaternion.setEulerAngles(75, 0, 0);
         LightingEnvironment.main.lights.push(directionalLight);
 
         this.shadowCastingLight = new ShadowCastingLight(
@@ -55,11 +56,55 @@ const {
         );
         this.shadowCastingLight.softness = 2;
         this.shadowCastingLight.shadowArea = 15;
+        //ImageBasedLighting.fromHDR("https://raw.githubusercontent.com/BabylonJS/Babylon.js/master/assets/environment/environmentSpecular.env");
+
 
         this.pipeline = this.pixiApp.renderer.plugins.pipeline;
 
         this.applicationCreated = true;
+
+        const plane = Mesh3D.createPlane();
+
+        // Set its size (width and height)
+        plane.scale.set(10, 1, 10); // wide and flat
+
+        // Move it down so your model is above it
+        //plane.y = 1; // Just below model (avoid Z-fighting)
+
+        // Optional: make it a neutral gray material
+        // plane.material = new StandardMaterial();
+        // plane.material.baseColor = new Color(0.4, 0.4, 0.4); // light gray
+        const material = new StandardMaterial();
+        const texture = await Assets.load("./static/assets/10008.jpg");
         
+        
+        texture.baseTexture.wrapMode = WRAP_MODES.REPEAT;
+        material.baseColorTexture = texture;
+
+        material.doubleSided = true;
+        material.roughness = 1.0;
+        material.metallic = 0.0;
+        material.emissiveColor = new Color(0.2, 0.2, 0.2);
+        
+        // ✅ Optional: tile the texture more clearly
+
+        plane.material = material;
+
+        const quad1 = Quaternion.fromEuler(20, 0, 0);
+        const quad2 = Quaternion.fromEuler(0, 90, 0);
+        // Then rotate around the y-axis
+        const permanentQuad = this.multiplyQuaternions(quad1, quad2);
+        // Now rotate to bird's eye view
+        const birdEye = Quaternion.fromEuler(0, 0, -90);
+        const finalQuat = this.multiplyQuaternions(permanentQuad, birdEye);
+        plane.rotationQuaternion = finalQuat;
+
+        plane.position.set(0, 0, 0);
+        plane.material.roughness = 1.0; // matte surface
+        plane.material.metallic = 0.0;
+        
+        this.pixiApp.stage.addChild(plane);
+        this.pipeline.enableShadows(plane, this.shadowCastingLight);
 
         // function animate() {
         //     cube.rotationQuaternion = this.multiplyQuaternions(cube.rotationQuaternion, Quaternion.fromEuler(0.5, 0.5, 0));
@@ -220,14 +265,92 @@ const {
         const quad2 = Quaternion.fromEuler(0, 90, 0);
         // Then rotate around the y-axis
         const permanentQuad = this.multiplyQuaternions(quad1, quad2);
-        model.rotationQuaternion = permanentQuad;
+        // Now rotate to bird's eye view
+        const birdEye = Quaternion.fromEuler(0, 0, -90);
+        const finalQuat = this.multiplyQuaternions(permanentQuad, birdEye);
+        model.rotationQuaternion = finalQuat;
         model.position.set(0, 0, 0);
+        model.scale.set(0.5, 0.5);
         
         // Optionally set rotation if needed
         // model.rotationQuaternion = Quaternion.fromEuler(0, 0, 0);
 
         // Add model to the scene
         this.pixiApp.stage.addChild(model);
+        
+        console.log(this.pixiApp);
+        const camera = new Camera(this.pixiApp.renderer);
+        // camera.position.set(0, -10, 0); // 10 units above the origin
+        // camera.rotationQuaternion.setEulerAngles(-90, 0, 0); // Look straight down
+
+        // 2. Set it as the main camera
+        Camera.main = camera;
+
+        // 3. Add it to the stage
+        this.pixiApp.stage.addChild(camera);
+
+        // 4. OPTIONAL: Disable orbit control (if it's interfering)
+        if (CameraOrbitControl.main) {
+          CameraOrbitControl.main.enabled = false;
+        }
+
+        // const orbit = new CameraOrbitControl(camera);
+        // orbit.enabled = false;
+
+        let angle = 0;
+        const radius = 10;   // distance from model
+        const height = -5;    // camera height above model
+        
+        this.pixiApp.ticker.add(() => {
+          //angle += 0.01; // adjust speed here
+          console.log(angle);
+        
+          // set camera position in a circle around model
+          camera.position.set(
+            model.position.x + 0,
+            model.position.y,
+            model.position.z - radius * Math.cos(angle)
+          );
+        
+          // rotate camera to look at model
+          const dx = model.position.x - camera.position.x;
+          const dy = model.position.y - camera.position.y;
+          const dz = model.position.z - camera.position.z;
+        
+          // Calculate yaw (rotation around Y axis)
+          const yaw = Math.atan2(dx, dz);
+        
+          // Set camera rotationQuaternion to face the model
+          camera.rotationQuaternion.setEulerAngles(0, -yaw , 0);
+          console.log(this.pixiApp);
+          console.log("Camera pos", camera.position.array);
+          console.log("Model pos", model.position.array);
+        // console.log("Camera rot", camera.rotationQuaternion.array);
+        // console.log("Model rot", model.rotationQuaternion.array);
+        });
+
+        //CameraOrbitControl.main.enabled = true;
+        // CameraOrbitControl.main.enabled = false;
+
+        // this.pixiApp.ticker.addOnce(() => {
+        //   const camera = new Camera();
+        //   camera.position.set(0, 10, 0);
+        //   camera.rotationQuaternion.setEulerAngles(-90, 0, 0);
+        //   this.pixiApp.stage.addChild(camera);
+        //   this.pixiApp.stage.camera = camera;
+        // });
+
+        // OPTIONAL: Follow the model if it moves
+        // this.pixiApp.ticker.add(() => {
+        //   console.log(this.pixiApp);
+        //   camera.position.set(model.position.x, model.position.y + 10, model.position.z);
+        // });
+
+        console.log("Camera pos", camera.position.array);
+        console.log("Model pos", model.position.array);
+        console.log("Camera rot", camera.rotationQuaternion.array);
+        console.log("Model rot", model.rotationQuaternion.array);
+        
 
         // Enable shadows for the model
         this.pipeline.enableShadows(model, this.shadowCastingLight);
