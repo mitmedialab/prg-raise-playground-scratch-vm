@@ -250,11 +250,83 @@ const {
         model.position.set(x*0.01, y*0.01, model.position.z);
         console.log("model position", model.position)
       }
+
+      getHeadingFromQuaternion(q) {
+        // Extract yaw (rotation around Y axis) from quaternion
+        const ysqr = q.y * q.y;
+        const t3 = 2.0 * (q.w * q.y + q.z * q.x);
+        const t4 = 1.0 - 2.0 * (ysqr + q.z * q.z);
+        return Math.atan2(t3, t4); // returns radians
+      }
+      
+      animateArc(angleDeg, radius, speed = 0.5) {
+        const model = this.doodlebot;
+        const start = performance.now();
+      
+        const startX = model.position.x;
+        const startY = model.position.y;
+      
+        const arcLength = Math.abs(angleDeg) * Math.PI / 180 * radius;
+        const durationMs = arcLength / speed * 1000;
+      
+        const isCCW = angleDeg > 0 ? 1 : -1;
+      
+        function easeInOutQuad(t) {
+          return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        }
+      
+        let lastAngleDeg = 0;
+        let initialHeading = null;
+        let centerX, centerY;
+      
+        const update = (now) => {
+          const elapsed = now - start;
+          const tRaw = Math.min(elapsed / durationMs, 1);
+          const t = easeInOutQuad(tRaw);
+          const currentAngleDeg = t * angleDeg;
+          const rad = currentAngleDeg * Math.PI / 180;
+      
+          // Compute heading + arc center once on first frame
+          if (initialHeading === null) {
+            initialHeading = -1*this.getHeadingFromQuaternion(model.rotationQuaternion);
+            centerX = startX + Math.sin(initialHeading) * radius * isCCW;
+            centerY = startY - Math.cos(initialHeading) * radius * isCCW;
+          }
+      
+          const x = centerX - Math.sin(initialHeading + isCCW * rad) * radius;
+          const y = centerY + Math.cos(initialHeading + isCCW * rad) * radius;
+          model.position.set(x, y, model.position.z);
+
+      
+          const deltaAngleDeg = currentAngleDeg - lastAngleDeg;
+          const q = Quaternion.fromEuler(0, 0, deltaAngleDeg);
+          model.rotationQuaternion = this.multiplyQuaternions(q, model.rotationQuaternion);
+      
+          lastAngleDeg = currentAngleDeg;
+      
+          if (tRaw < 1) {
+            requestAnimationFrame(update);
+          }
+        };
+      
+        requestAnimationFrame(update);
+      }
+      
       
       
 
-    async importGltf(url, position, scale) {
-        const model = await this.loadGLBModel(url);
+    async importGltf(buffer, position, scale) {
+      let model;
+      console.log("BUFFER", buffer);
+      if (buffer.includes("assets")) {
+        model = await Assets.load(buffer);
+        model = await Model.from(model);
+        console.log("model", model);
+        this.doodlebot = model;
+      } else {
+        model = await this.loadGLBModel(buffer);
+      }
+
         // Set position
         model.position.set(position[0], position[1], position[2]);
         
@@ -322,9 +394,6 @@ const {
         
           // Set camera rotationQuaternion to face the model
           camera.rotationQuaternion.setEulerAngles(0, -yaw , 0);
-          console.log(this.pixiApp);
-          console.log("Camera pos", camera.position.array);
-          console.log("Model pos", model.position.array);
         // console.log("Camera rot", camera.rotationQuaternion.array);
         // console.log("Model rot", model.rotationQuaternion.array);
         });
