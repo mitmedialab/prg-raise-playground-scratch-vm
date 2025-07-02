@@ -84,13 +84,13 @@ const {
         material.doubleSided = true;
         material.roughness = 1.0;
         material.metallic = 0.0;
-        material.emissiveColor = new Color(0.2, 0.2, 0.2);
+        material.emissiveColor = new Color(0.5, 0.5, 0.5);
         
         // ✅ Optional: tile the texture more clearly
 
         plane.material = material;
 
-        const quad1 = Quaternion.fromEuler(20, 0, 0);
+        const quad1 = Quaternion.fromEuler(0, 0, 0);
         const quad2 = Quaternion.fromEuler(0, 90, 0);
         // Then rotate around the y-axis
         const permanentQuad = this.multiplyQuaternions(quad1, quad2);
@@ -258,8 +258,9 @@ const {
         const t4 = 1.0 - 2.0 * (ysqr + q.z * q.z);
         return Math.atan2(t3, t4); // returns radians
       }
+
       
-      animateArc(angleDeg, radius, speed = 0.5) {
+      animateArc(angleDeg, radius, speed = 1) {
         const model = this.doodlebot;
         const start = performance.now();
       
