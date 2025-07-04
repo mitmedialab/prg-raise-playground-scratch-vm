@@ -851,7 +851,19 @@ class Runtime extends EventEmitter {
             categoryInfo.color3 = defaultExtensionColors[2];
         }
 
-        this._blockInfo.push(categoryInfo);
+        const existingIndex = this._blockInfo.findIndex(
+            (item) => item.id === categoryInfo.id
+        );
+        
+        if (existingIndex !== -1) {
+            // Replace existing
+            this._blockInfo[existingIndex] = categoryInfo;
+            console.log(`Replaced existing with id: ${categoryInfo.id}`);
+        } else {
+            // Add new
+            this._blockInfo.push(categoryInfo);
+            console.log(`Added new with id: ${categoryInfo.id}`);
+        }
 
         this._fillExtensionCategory(categoryInfo, extensionInfo);
 
