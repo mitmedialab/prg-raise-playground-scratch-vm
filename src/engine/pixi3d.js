@@ -205,6 +205,147 @@ const {
         model.position.set(x*0.01, y*0.01, model.position.z);
         console.log("model position", model.position)
       }
+
+      getHeadingFromQuaternion(q) {
+        // Extract yaw (rotation around Y axis) from quaternion
+        const ysqr = q.y * q.y;
+        const t3 = 2.0 * (q.w * q.y + q.z * q.x);
+        const t4 = 1.0 - 2.0 * (ysqr + q.z * q.z);
+        return Math.atan2(t3, t4); // returns radians
+      }
+      
+      animateArc(angleDeg, radius, speed = 0.5) {
+        const model = this.doodlebot;
+        const start = performance.now();
+      
+        const startX = model.position.x;
+        const startY = model.position.y;
+      
+        const arcLength = Math.abs(angleDeg) * Math.PI / 180 * radius;
+        const durationMs = arcLength / speed * 1000;
+      
+        const isCCW = angleDeg > 0 ? 1 : -1;
+      
+        function easeInOutQuad(t) {
+          return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        }
+      
+        let lastAngleDeg = 0;
+        let initialHeading = null;
+        let centerX, centerY;
+      
+        const update = (now) => {
+          const elapsed = now - start;
+          const tRaw = Math.min(elapsed / durationMs, 1);
+          const t = easeInOutQuad(tRaw);
+          const currentAngleDeg = t * angleDeg;
+          const rad = currentAngleDeg * Math.PI / 180;
+      
+          // Compute heading + arc center once on first frame
+          if (initialHeading === null) {
+            initialHeading = -1*this.getHeadingFromQuaternion(model.rotationQuaternion);
+            centerX = startX + Math.sin(initialHeading) * radius * isCCW;
+            centerY = startY - Math.cos(initialHeading) * radius * isCCW;
+          }
+      
+          const x = centerX - Math.sin(initialHeading + isCCW * rad) * radius;
+          const y = centerY + Math.cos(initialHeading + isCCW * rad) * radius;
+          model.position.set(x, y, model.position.z);
+
+      
+          const deltaAngleDeg = currentAngleDeg - lastAngleDeg;
+          const q = Quaternion.fromEuler(0, 0, deltaAngleDeg);
+          model.rotationQuaternion = this.multiplyQuaternions(q, model.rotationQuaternion);
+      
+          lastAngleDeg = currentAngleDeg;
+      
+          if (tRaw < 1) {
+            requestAnimationFrame(update);
+          }
+        };
+      
+        requestAnimationFrame(update);
+      }
+
+
+      animateStraight(distance, speed = 0.5) {
+        const model = this.doodlebot;
+        const start = performance.now();
+      
+        const startX = model.position.x;
+        const startY = model.position.y;
+      
+        const durationMs = Math.abs(distance) / speed * 1000;
+      
+        // Get the robot’s current heading **in radians**
+        const heading = -1 * this.getHeadingFromQuaternion(model.rotationQuaternion);
+      
+        // Direction: 1 = forward, -1 = backward
+        const direction = distance > 0 ? 1 : -1;
+      
+        const easeInOutQuad = (t) => {
+          return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        };
+      
+        const update = (now) => {
+          const elapsed = now - start;
+          const tRaw = Math.min(elapsed / durationMs, 1);
+          const t = easeInOutQuad(tRaw);
+      
+          const travel = t * Math.abs(distance) * direction;
+      
+          const x = startX + Math.sin(heading) * travel;
+          const y = startY - Math.cos(heading) * travel;
+      
+          model.position.set(x, y, model.position.z);
+      
+          if (tRaw < 1) {
+            requestAnimationFrame(update);
+          }
+        };
+      
+        requestAnimationFrame(update);
+      }
+
+      spin(angleDeg, speed = 90) {
+        const model = this.doodlebot;
+        const start = performance.now();
+      
+        // `speed` here is degrees per second
+        const durationMs = Math.abs(angleDeg) / speed * 1000;
+      
+        let lastAngleDeg = 0;
+      
+        const easeInOutQuad = (t) => {
+          return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        };
+      
+        const update = (now) => {
+          const elapsed = now - start;
+          const tRaw = Math.min(elapsed / durationMs, 1);
+          const t = easeInOutQuad(tRaw);
+      
+          const currentAngleDeg = t * angleDeg;
+      
+          const deltaAngleDeg = currentAngleDeg - lastAngleDeg;
+          const deltaRad = deltaAngleDeg * Math.PI / 180;
+      
+          // Rotate around Y-axis for heading change!
+          const q = Quaternion.fromEuler(0, -deltaRad, 0);
+          model.rotationQuaternion = this.multiplyQuaternions(q, model.rotationQuaternion);
+      
+          lastAngleDeg = currentAngleDeg;
+      
+          if (tRaw < 1) {
+            requestAnimationFrame(update);
+          }
+        };
+      
+        requestAnimationFrame(update);
+      }
+      
+      
+      
       
       
 
