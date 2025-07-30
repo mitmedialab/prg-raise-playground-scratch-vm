@@ -159,6 +159,8 @@ class VirtualMachine extends EventEmitter {
         this.runtime.on(Runtime.ADD_BLOCKS_TO_WORKSPACE, (xmlToAdd) => {
             this.emitWorkspaceUpdateWithAdditionalBlocks(xmlToAdd);
         });
+
+        this.runtime._downloadProjectFromURLDirect = this.downloadProjectFromURLDirect.bind(this);
         /** PRG ADDITION END */
 
         this.extensionManager = new ExtensionManager(this.runtime);
@@ -167,6 +169,8 @@ class VirtualMachine extends EventEmitter {
         for (const id of CORE_EXTENSIONS) {
             this.extensionManager.loadExtensionIdSync(id);
         }
+
+        
 
         this.blockListener = this.blockListener.bind(this);
         this.flyoutBlockListener = this.flyoutBlockListener.bind(this);
