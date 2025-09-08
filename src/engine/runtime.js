@@ -1194,7 +1194,9 @@ class Runtime extends EventEmitter {
         }
 
         if (blockInfo.blockType === BlockType.REPORTER) {
-            if (!blockInfo.disableMonitor && context.inputList.length === 0) {
+            //if (!blockInfo.disableMonitor && context.inputList.length === 0) {
+            // EDITED HERE
+            if (!blockInfo.disableMonitor) {
                 blockJSON.checkboxInFlyout = true;
             }
         } else if (blockInfo.blockType === BlockType.LOOP) {
@@ -2570,6 +2572,20 @@ class Runtime extends EventEmitter {
         return {
             category: 'extension', // This assumes that all extensions have the same monitor color.
             label: `${categoryInfo.name}: ${block.info.text}`
+        };
+    }
+
+    getLabelForOpcodeWithArgument(extendedOpcode, argument) {
+        const [category, opcode] = StringUtil.splitFirst(extendedOpcode, '_');
+        if (!(category && opcode)) return;
+
+        const categoryInfo = this._blockInfo.find(ci => ci.id === category);
+        if (!categoryInfo) return;
+
+        // TODO: we may want to format the label in a locale-specific way.
+        return {
+            category: 'extension', // This assumes that all extensions have the same monitor color.
+            label: `${categoryInfo.name}: ${argument}`
         };
     }
 
