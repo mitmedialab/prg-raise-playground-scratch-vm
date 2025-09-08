@@ -2575,19 +2575,29 @@ class Runtime extends EventEmitter {
         };
     }
 
-    getLabelForOpcodeWithArgument(extendedOpcode, argument) {
+    /** BEGIN PRG Additions */
+
+    getLabelForOpcodeWithArgument(extendedOpcode, args) {
         const [category, opcode] = StringUtil.splitFirst(extendedOpcode, '_');
         if (!(category && opcode)) return;
-
+    
         const categoryInfo = this._blockInfo.find(ci => ci.id === category);
         if (!categoryInfo) return;
-
-        // TODO: we may want to format the label in a locale-specific way.
+    
+        // Concatenate the argument values in the order of their keys
+        const labelArgs = Object.keys(args)
+            .sort() // optional, ensures arg1, arg2, etc., in order
+            .map(key => args[key])
+            .join(' ');
+    
         return {
-            category: 'extension', // This assumes that all extensions have the same monitor color.
-            label: `${categoryInfo.name}: ${argument}`
+            category: 'extension', // assumes all extensions have the same monitor color
+            label: `${categoryInfo.name}: ${labelArgs}`
         };
     }
+    
+
+    /** BEGIN PRG Additions */
 
     /**
      * Create a new global variable avoiding conflicts with other variable names.
