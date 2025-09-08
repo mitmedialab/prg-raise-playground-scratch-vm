@@ -30,6 +30,10 @@ class Cast {
             }
             return value;
         }
+        if (typeof value === 'string') {
+            const n = parseFloat(value.trim());
+            return Number.isNaN(n) ? 0 : n;
+        }
         const n = Number(value);
         if (Number.isNaN(n)) {
             // Scratch treats NaN as 0, when needed as a number.
