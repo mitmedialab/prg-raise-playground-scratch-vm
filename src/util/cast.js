@@ -123,8 +123,21 @@ class Cast {
      * @returns {number} Negative number if v1 < v2; 0 if equal; positive otherwise.
      */
     static compare(v1, v2) {
-        let n1 = Number(v1);
-        let n2 = Number(v2);
+        let n1;
+        if (typeof v1 === 'string') {
+            const n = parseFloat(v1.trim());
+            n1 = Number.isNaN(n) ? 0 : n;
+        } else {
+            n1 = Number(v1);
+        }
+         
+        let n2;
+        if (typeof v2 === 'string') {
+            const n = parseFloat(v2.trim());
+            n2 = Number.isNaN(n) ? 0 : n;
+        } else {
+            n2 = Number(v2);
+        }
         if (n1 === 0 && Cast.isWhiteSpace(v1)) {
             n1 = NaN;
         } else if (n2 === 0 && Cast.isWhiteSpace(v2)) {
