@@ -124,7 +124,7 @@ class Cast {
      */
     static compare(v1, v2) {
         let n1;
-        if (typeof v1 === 'string') {
+        if (typeof v1 === 'string' && !Number.isNaN(parseFloat(v1.trim()))) {
             const n = parseFloat(v1.trim());
             n1 = Number.isNaN(n) ? 0 : n;
         } else {
@@ -132,7 +132,7 @@ class Cast {
         }
          
         let n2;
-        if (typeof v2 === 'string') {
+        if (typeof v2 === 'string'  && !Number.isNaN(parseFloat(v2.trim()))) {
             const n = parseFloat(v2.trim());
             n2 = Number.isNaN(n) ? 0 : n;
         } else {
