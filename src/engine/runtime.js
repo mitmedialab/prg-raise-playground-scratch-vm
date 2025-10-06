@@ -587,6 +587,14 @@ class Runtime extends EventEmitter {
     }
 
     /**
+     * Event name for scrolling the categories in the toolbox.
+     * @const {string}
+     */
+    static get CATEGORY_SCROLL_UPDATE() {
+        return 'CATEGORY_SCROLL_UPDATE';
+    }
+
+    /**
      * Event name for block drag end.
      * @const {string}
      */
@@ -2328,6 +2336,14 @@ class Runtime extends EventEmitter {
      */
     emitBlockDragUpdate(areBlocksOverGui) {
         this.emit(Runtime.BLOCK_DRAG_UPDATE, areBlocksOverGui);
+    }
+
+    /**
+     * Emit whether to scroll to a specific category
+     * @param {string} category Specific category to scroll to
+     */
+    emitScrollUpdate(category) {
+        this.emit(Runtime.CATEGORY_SCROLL_UPDATE, category);
     }
 
     /**
