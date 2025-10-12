@@ -1239,6 +1239,10 @@ class VirtualMachine extends EventEmitter {
         this.runtime.getPixi3D();
     }
 
+    getJiboAvatar() {
+        return this.runtime.getJiboAvatar();
+    }
+
     /**
      * @returns {RenderWebGL} The renderer attached to the vm
      */

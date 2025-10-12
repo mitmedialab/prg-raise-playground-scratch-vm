@@ -20,6 +20,7 @@ const xmlEscape = require('../util/xml-escape');
 const ScratchLinkWebSocket = require('../util/scratch-link-websocket');
 const fetchWithTimeout = require('../util/fetch-with-timeout');
 const Pixi3D = require("./pixi3d.js");
+const JiboSceneManager = require("./jibo-scene.js");
 
 // Virtual I/O devices.
 const Clock = require('../io/clock');
@@ -1622,6 +1623,7 @@ class Runtime extends EventEmitter {
     attachRenderer(renderer) {
         this.renderer = renderer;
         this.pixi3d = new Pixi3D(this.renderer._gl);
+        this.jiboAvatar = new JiboSceneManager(this.renderer._gl, this.renderer);
         this.renderer.setLayerGroupOrdering(StageLayering.LAYER_GROUPS);
     }
 
@@ -2742,6 +2744,10 @@ class Runtime extends EventEmitter {
     }
 
     /** PRG ADDITIONS END */
+
+    getJiboAvatar() {
+        return this.jiboAvatar;
+    }
 }
 
 /**
