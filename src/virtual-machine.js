@@ -263,6 +263,10 @@ class VirtualMachine extends EventEmitter {
         if (this.runtime.ioDevices[device]) {
             this.runtime.ioDevices[device].postData(data);
         }
+        
+        if (device === 'mouse' && this.runtime.jiboAvatar) {
+            this.runtime.jiboAvatar.updateMousePosition(data);
+        }
     }
 
     setVideoProvider(videoProvider) {
