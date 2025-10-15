@@ -1,4 +1,4 @@
-const animationUtilities = require("../../../../PRG-Virtual_Jibo/src/index.js");
+const animationUtilities = require("../../../../scratch-packages/scratch-gui/static/PRG-Virtual_Jibo/src/index.js");
 
 const {
     visualize,
