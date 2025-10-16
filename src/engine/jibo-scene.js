@@ -207,7 +207,7 @@ class JiboSceneManager {
                 return;
             }
             
-            this.animUtils.createAnimationBuilder('res/geometry-config/P1.0/jibo_blink.anim', (builder) => {
+            this.animUtils.createAnimationBuilder('static/PRG-Virtual_Jibo/res/geometry-config/P1.0/jibo_blink.anim', (builder) => {
                 if (builder) {
                     const currentDOFs = builder.getDOFs();
                     const filteredDOFs = currentDOFs.filter(dof => 
