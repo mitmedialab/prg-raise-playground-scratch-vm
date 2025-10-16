@@ -278,12 +278,16 @@ class JiboSceneManager {
     }
 
     async playEmotionAnimation(emotion) {
-        if (emotion === 'neutral' || emotion === 'calm') {
+        if (emotion === 'neutral') {
             this.resetPose();
             return;
         }
 
         const animations = {
+            calm: [
+                'static/animations/emotions/relieved/relieved_01.anim',
+                'static/animations/emotions/relieved/relieved_02.anim'
+            ],
             happy: [
                 'static/animations/emotions/happy/happy_01.anim',
                 'static/animations/emotions/happy/happy_02.anim',
