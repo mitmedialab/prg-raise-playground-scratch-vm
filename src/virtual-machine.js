@@ -12,6 +12,7 @@ const centralDispatch = require('./dispatch/central-dispatch');
 const ExtensionManager = require('./extension-support/extension-manager');
 const log = require('./util/log');
 const MathUtil = require('./util/math-util');
+const ScratchCanvasRecorder = require('./util/scratch-canvas-recorder')
 const Runtime = require('./engine/runtime');
 const StringUtil = require('./util/string-util');
 const formatMessage = require('format-message');
@@ -196,6 +197,33 @@ class VirtualMachine extends EventEmitter {
         this.runtime.greenFlag();
     }
 
+    startRecording() {
+        this.setRecordingMode(true);
+        this.mediaRecorder.startRecording();
+    }
+
+    stopRecording() {
+        this.setRecordingMode(false);
+        this.mediaRecorder.stopRecording();
+    }
+
+    downloadRecording() {
+        this.mediaRecorder.download();
+    }
+
+    isRecording() {
+        return this.mediaRecorder && this.mediaRecorder.isRecording();
+    }
+
+    setRecordingMode(recordingOn) {
+        this.runtime.recording = !!recordingOn;
+        if (this.runtime.recording) {
+            this.emit(Runtime.RECORDING_ON);
+        } else {
+            this.emit(Runtime.RECORDING_OFF);
+        }
+    }
+
     /**
      * Set whether the VM is in "turbo mode."
      * When true, loops don't yield to redraw.
@@ -223,6 +251,9 @@ class VirtualMachine extends EventEmitter {
      * Stop all threads and running activities.
      */
     stopAll() {
+        if (this.runtime.recording) {
+            this.stopRecording();
+        }
         this.runtime.stopAll();
     }
 
@@ -1182,6 +1213,7 @@ class VirtualMachine extends EventEmitter {
      */
     attachRenderer(renderer) {
         this.runtime.attachRenderer(renderer);
+        this.mediaRecorder = new ScratchCanvasRecorder(renderer.canvas)
     }
 
     /**
