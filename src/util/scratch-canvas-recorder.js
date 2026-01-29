@@ -1,3 +1,4 @@
+/** PRG ADDITION BEGIN */
 class ScratchCanvasRecorder {
     constructor(canvas) {
         this.canvas = canvas;
@@ -184,3 +185,4 @@ class ScratchCanvasRecorder {
 }
 
 module.exports = ScratchCanvasRecorder;
+/** PRG ADDITION END */
