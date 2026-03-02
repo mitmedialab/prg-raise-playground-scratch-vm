@@ -533,7 +533,7 @@ class Scratch3PenBlocks {
             target.addListener(RenderedTarget.EVENT_TARGET_MOVED, this._onTargetMoved);
         }
 
-        penSkinId = this._getPenLayerID();
+        let penSkinId = this._getPenLayerID();
         if (penSkinId >= 0) {
             this.runtime.renderer.penPoint(penSkinId, penState.penAttributes, target.x, target.y);
             this.runtime.requestRedraw();
