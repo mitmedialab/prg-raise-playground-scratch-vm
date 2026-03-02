@@ -511,7 +511,7 @@ class Scratch3PenBlocks {
      * @param {object} util - utility object provided by the runtime.
      */
     stamp(args, util) {
-        penSkinId = this._getPenLayerID();
+        let penSkinId = this._getPenLayerID();
         if (penSkinId >= 0) {
             const target = util.target;
             this.runtime.renderer.penStamp(penSkinId, target.drawableID);
