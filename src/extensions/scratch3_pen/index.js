@@ -511,7 +511,7 @@ class Scratch3PenBlocks {
      * @param {object} util - utility object provided by the runtime.
      */
     stamp(args, util) {
-        penSkinId = this._getPenLayerID();
+        const penSkinId = this._getPenLayerID();
         if (penSkinId >= 0) {
             const target = util.target;
             this.runtime.renderer.penStamp(penSkinId, target.drawableID);
@@ -533,7 +533,7 @@ class Scratch3PenBlocks {
             target.addListener(RenderedTarget.EVENT_TARGET_MOVED, this._onTargetMoved);
         }
 
-        penSkinId = this._getPenLayerID();
+        const penSkinId = this._getPenLayerID();
         if (penSkinId >= 0) {
             this.runtime.renderer.penPoint(penSkinId, penState.penAttributes, target.x, target.y);
             this.runtime.requestRedraw();
