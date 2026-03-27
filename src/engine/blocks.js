@@ -9,6 +9,7 @@ const BlocksRuntimeCache = require('./blocks-runtime-cache');
 const log = require('../util/log');
 const Variable = require('./variable');
 const getMonitorIdForBlockWithArgs = require('../util/get-monitor-id');
+const ScratchBlocks = require('scratch-blocks');
 
 /**
  * @fileoverview
@@ -554,6 +555,13 @@ class Blocks {
         // A new block was actually added to the block container,
         // emit a project changed event
         this.emitProjectChanged();
+
+        const scratchBlock = ScratchBlocks.getMainWorkspace().getBlockById(block.id);
+        if (scratchBlock) {
+            const blockSvg = scratchBlock.getSvgRoot()
+            blockSvg.setAttribute('data-opcode', block.opcode);
+        }
+        
     }
 
     /**
