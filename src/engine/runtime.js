@@ -485,6 +485,24 @@ class Runtime extends EventEmitter {
         return 'TURBO_MODE_OFF';
     }
 
+    /** PRG ADDITION BEGIN */
+    /**
+     * Event name for starting the recording.
+     * @const {string}
+     */
+    static get RECORDING_ON() {
+        return 'RECORDING_ON';
+    }
+
+    /**
+     * Event name for stopping the recording.
+     * @const {string}
+     */
+    static get RECORDING_OFF() {
+        return 'RECORDING_OFF';
+    }
+    /** PRG ADDITION END */
+
     /**
      * Event name when the project is started (threads may not necessarily be
      * running).
