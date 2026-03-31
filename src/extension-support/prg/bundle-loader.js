@@ -51,6 +51,11 @@ const constructors = new Map();
 const auxiliarObjects = new Map();
 
 const untilScriptLoaded = (endpoint, { onLoad, onError }) => {
+  console.log(endpoint);
+  if (endpoint.includes("simpleprg95grpexample")) {
+    console.log("HERE", window["simpleprg95grpexample"]);
+    console.log(window[AuxiliaryExtensionInfo]["simpleprg95grpexample"])
+  }
   var scriptTag = document.createElement('script');
   var host = location.href.split("?")[0];
   host = host.endsWith("/") ? host.slice(0, -1) : host;
@@ -59,6 +64,11 @@ const untilScriptLoaded = (endpoint, { onLoad, onError }) => {
     scriptTag.onload = () => resolve(onLoad());
     scriptTag.onerror = () => reject(onError())
     document.body.appendChild(scriptTag);
+    setTimeout(() => {
+      console.log("HERE 2", window["simpleprg95grpexample"]);
+      console.log(window[AuxiliaryExtensionInfo]["simpleprg95grpexample"])
+    }, 1000)
+    
   });
 }
 
@@ -82,6 +92,8 @@ const untilCommonObjects = (...IDs) => Promise.all(
 );
 
 const tryImportExtensionBundle = async (id, callbacks) => {
+  console.log("IMPORTING");
+  console.log(id);
   try {
     await untilCommonObjects(FrameworkID, AuxiliaryExtensionInfo);
     await untilScriptLoaded(getEndPoint(id), callbacks);
