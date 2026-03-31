@@ -586,6 +586,16 @@ class Runtime extends EventEmitter {
         return 'BLOCK_DRAG_UPDATE';
     }
 
+    /** PRG ADDITION BEGIN */
+    /**
+     * Event name for scrolling the categories in the toolbox.
+     * @const {string}
+     */
+    static get CATEGORY_SCROLL_UPDATE() {
+        return 'CATEGORY_SCROLL_UPDATE';
+    }
+    /** PRG ADDITION END */
+
     /**
      * Event name for block drag end.
      * @const {string}
@@ -2327,6 +2337,16 @@ class Runtime extends EventEmitter {
     emitBlockDragUpdate(areBlocksOverGui) {
         this.emit(Runtime.BLOCK_DRAG_UPDATE, areBlocksOverGui);
     }
+
+    /** PRG ADDITION BEGIN */
+    /**
+     * Emit whether to scroll to a specific category
+     * @param {string} category Specific category to scroll to
+     */
+    emitScrollUpdate(category) {
+        this.emit(Runtime.CATEGORY_SCROLL_UPDATE, category);
+    }
+    /** PRG ADDITION END */
 
     /**
      * Emit event to indicate that the block drag has ended with the blocks outside the blocks workspace
