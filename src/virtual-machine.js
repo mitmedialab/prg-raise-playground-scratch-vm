@@ -750,7 +750,6 @@ class VirtualMachine extends EventEmitter {
         if (md5ext.includes("data:image")) {
             md5ext = "e6ddc55a6ddd9cc9d84fe0b4c21e016f.svg"
         }
-        console.log("ADDING COSTUME");
         if (target) {
             return loadCostume(md5ext, costumeObject, this.runtime, optVersion).then(() => {
                 target.addCostume(costumeObject);
