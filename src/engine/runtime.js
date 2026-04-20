@@ -1194,7 +1194,9 @@ class Runtime extends EventEmitter {
         }
 
         if (blockInfo.blockType === BlockType.REPORTER) {
-            if (!blockInfo.disableMonitor && context.inputList.length === 0) {
+            //if (!blockInfo.disableMonitor && context.inputList.length === 0) {
+            // EDITED HERE
+            if (!blockInfo.disableMonitor) {
                 blockJSON.checkboxInFlyout = true;
             }
         } else if (blockInfo.blockType === BlockType.LOOP) {
@@ -2572,6 +2574,30 @@ class Runtime extends EventEmitter {
             label: `${categoryInfo.name}: ${block.info.text}`
         };
     }
+
+    /** BEGIN PRG Additions */
+
+    getLabelForOpcodeWithArgument(extendedOpcode, args) {
+        const [category, opcode] = StringUtil.splitFirst(extendedOpcode, '_');
+        if (!(category && opcode)) return;
+    
+        const categoryInfo = this._blockInfo.find(ci => ci.id === category);
+        if (!categoryInfo) return;
+    
+        // Concatenate the argument values in the order of their keys
+        const labelArgs = Object.keys(args)
+            .sort() // optional, ensures arg1, arg2, etc., in order
+            .map(key => args[key])
+            .join(' ');
+    
+        return {
+            category: 'extension', // assumes all extensions have the same monitor color
+            label: `${categoryInfo.name}: ${labelArgs}`
+        };
+    }
+    
+
+    /** BEGIN PRG Additions */
 
     /**
      * Create a new global variable avoiding conflicts with other variable names.
