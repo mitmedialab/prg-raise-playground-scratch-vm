@@ -592,6 +592,7 @@ class VirtualMachine extends EventEmitter {
      * @returns {Promise} resolved once targets have been installed
      */
     installTargets(targets, extensions, wholeProject, fullJSON) {
+        console.log("loaded targets", targets);
 
         /** PRG ADDITION BEGIN */
         const { extensionManager } = this;

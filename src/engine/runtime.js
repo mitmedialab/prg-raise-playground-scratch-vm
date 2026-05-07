@@ -2523,6 +2523,7 @@ class Runtime extends EventEmitter {
      * @return {?import("./target")} The target, if found.
      */
     getTargetForStage() {
+        console.log(this.targets);
         for (let i = 0; i < this.targets.length; i++) {
             const target = this.targets[i];
             if (target.isStage) {
