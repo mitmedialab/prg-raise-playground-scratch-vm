@@ -587,6 +587,7 @@ const serialize = function (runtime, targetId, /* PRG ADDITION BEGIN */ extensio
     /* PRG ADDITION BEGIN */
     // Save training data for the text classifier model
     obj.textModel = runtime.modelData ? runtime.modelData.classifierData : undefined;
+    obj.tools = runtime.tools ? runtime.tools : undefined;
     /* PRG ADDITION END */
 
     // Assemble metadata
@@ -1287,6 +1288,9 @@ const deserialize = function (json, runtime, zip, isSingleSprite) {
                 runtime.modelData.classifierData[label].push(example);
             }
         }
+    }
+    if (json.hasOwnProperty("tools")) {
+        runtime.tools = json.tools;
     }
     /* PRG ADDITION END */
 
