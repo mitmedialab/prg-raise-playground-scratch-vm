@@ -35,6 +35,7 @@ const uid = require('../util/uid');
 /** PRG ADDITION BEGIN */
 const dispatch = require('../dispatch/central-dispatch');
 const { loadCostume } = require('../import/load-costume');
+const sprites = require('../../../scratch-gui/src/lib/libraries/sprites.json');
 /** PRG ADDITION END */
 
 const defaultBlockPackages = {
@@ -1599,6 +1600,11 @@ class Runtime extends EventEmitter {
     getIsEdgeActivatedHat(opcode) {
         return Object.prototype.hasOwnProperty.call(this._hats, opcode) &&
             this._hats[opcode].edgeActivated;
+    }
+
+    getSpriteJson() {
+        console.log(sprites);
+        return sprites;
     }
 
 
