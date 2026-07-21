@@ -451,7 +451,7 @@ const serializeComments = function (comments) {
  * @param {Set} extensions A set of extensions to add extension IDs to
  * @return {object} A serialized representation of the given target.
  */
-const serializeTarget = function (target, extensions) {
+const serializeTarget = function (target, extensions, /* PRG ADDITION BEGIN */ tools /* PRG ADDITION END */) {
     const obj = Object.create(null);
     let targetExtensions = [];
     obj.isStage = target.isStage;
@@ -496,6 +496,14 @@ const serializeTarget = function (target, extensions) {
         obj.draggable = target.draggable;
         obj.rotationStyle = target.rotationStyle;
     }
+
+    // * PRG ADDITION BEGIN */
+
+    if (tools[target.id]) {
+        obj.tools = tools[target.id];
+    }
+
+    // * PRG ADDITION END */
 
     // Add found extensions to the extensions object
     targetExtensions.forEach(extensionId => {
@@ -564,7 +572,7 @@ const serialize = function (runtime, targetId, /* PRG ADDITION BEGIN */ extensio
         });
     }
 
-    const serializedTargets = flattenedOriginalTargets.map(t => serializeTarget(t, extensions));
+    const serializedTargets = flattenedOriginalTargets.map(t => serializeTarget(t, extensions, /* PRG ADDITION BEGIN */ runtime.tools ? runtime.tools : {} /* PRG ADDITION END */));
 
     if (targetId) {
         return serializedTargets[0];
@@ -587,7 +595,6 @@ const serialize = function (runtime, targetId, /* PRG ADDITION BEGIN */ extensio
     /* PRG ADDITION BEGIN */
     // Save training data for the text classifier model
     obj.textModel = runtime.modelData ? runtime.modelData.classifierData : undefined;
-    obj.tools = runtime.tools ? runtime.tools : undefined;
     /* PRG ADDITION END */
 
     // Assemble metadata
@@ -1289,9 +1296,6 @@ const deserialize = function (json, runtime, zip, isSingleSprite) {
             }
         }
     }
-    if (json.hasOwnProperty("tools")) {
-        runtime.tools = json.tools;
-    }
     /* PRG ADDITION END */
 
     // Store the origin field (e.g. project originated at CSFirst) so that we can save it again.
@@ -1310,17 +1314,36 @@ const deserialize = function (json, runtime, zip, isSingleSprite) {
         .sort((a, b) => a.layerOrder - b.layerOrder);
 
     const monitorObjects = json.monitors || [];
+    const tools = {};
 
     return Promise.resolve(
-        targetObjects.map(target =>
+        targetObjects.map(target => 
             parseScratchAssets(target, runtime, zip))
-    )
+        )
         // Force this promise to wait for the next loop in the js tick. Let
         // storage have some time to send off asset requests.
         .then(assets => Promise.resolve(assets))
         .then(assets => Promise.all(targetObjects
-            .map((target, index) =>
-                parseScratchObject(target, runtime, extensions, zip, assets[index]))))
+            .map((target, index) => {
+                return parseScratchObject(
+                    target,
+                    runtime,
+                    extensions,
+                    zip,
+                    assets[index]
+                )
+                // * PRG ADDITION BEGIN *
+                .then(parsedObject => {
+                    if (target.tools) {
+                        tools[parsedObject.id] = target.tools;
+                    }
+
+                    runtime.tools = tools;
+                    return parsedObject;
+                });
+                // * PRG ADDITION END *
+            })
+        ))
         .then(targets => targets // Re-sort targets back into original sprite-pane ordering
             .map((t, i) => {
                 // Add layer order property to deserialized targets.
@@ -1341,10 +1364,13 @@ const deserialize = function (json, runtime, zip, isSingleSprite) {
             monitorObjects.map(monitorDesc => deserializeMonitor(monitorDesc, runtime, targets, extensions));
             return targets;
         })
-        .then(targets => ({
-            targets,
-            extensions
-        }));
+        .then(targets => {
+            return ({
+                targets,
+                extensions
+            })
+        });
+        
 };
 
 module.exports = {
