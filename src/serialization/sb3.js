@@ -451,7 +451,7 @@ const serializeComments = function (comments) {
  * @param {Set} extensions A set of extensions to add extension IDs to
  * @return {object} A serialized representation of the given target.
  */
-const serializeTarget = function (target, extensions, /* PRG ADDITION BEGIN */ tools /* PRG ADDITION END */) {
+const serializeTarget = function (target, extensions) {
     const obj = Object.create(null);
     let targetExtensions = [];
     obj.isStage = target.isStage;
@@ -496,14 +496,6 @@ const serializeTarget = function (target, extensions, /* PRG ADDITION BEGIN */ t
         obj.draggable = target.draggable;
         obj.rotationStyle = target.rotationStyle;
     }
-
-    // * PRG ADDITION BEGIN */
-
-    if (tools[target.id]) {
-        obj.tools = tools[target.id];
-    }
-
-    // * PRG ADDITION END */
 
     // Add found extensions to the extensions object
     targetExtensions.forEach(extensionId => {
@@ -1284,6 +1276,11 @@ const deserialize = function (json, runtime, zip, isSingleSprite) {
 
     // Unpack the data for the text model
     runtime.modelData = { "textData": {}, "classifierData": {}, "nextLabelNumber": 1 };
+
+    if (json.hasOwnProperty("tools")) {
+        runtime.tools = json.tools;
+    }
+
     if (json.hasOwnProperty("textModel")) {
         // RANDI should make sure this works
         for (let label of Object.keys(json.textModel)) {
@@ -1314,7 +1311,6 @@ const deserialize = function (json, runtime, zip, isSingleSprite) {
         .sort((a, b) => a.layerOrder - b.layerOrder);
 
     const monitorObjects = json.monitors || [];
-    const tools = {};
 
     return Promise.resolve(
         targetObjects.map(target => 
@@ -1332,16 +1328,6 @@ const deserialize = function (json, runtime, zip, isSingleSprite) {
                     zip,
                     assets[index]
                 )
-                // * PRG ADDITION BEGIN *
-                .then(parsedObject => {
-                    if (target.tools) {
-                        tools[parsedObject.id] = target.tools;
-                    }
-
-                    runtime.tools = tools;
-                    return parsedObject;
-                });
-                // * PRG ADDITION END *
             })
         ))
         .then(targets => targets // Re-sort targets back into original sprite-pane ordering
