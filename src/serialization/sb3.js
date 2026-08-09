@@ -564,7 +564,7 @@ const serialize = function (runtime, targetId, /* PRG ADDITION BEGIN */ extensio
         });
     }
 
-    const serializedTargets = flattenedOriginalTargets.map(t => serializeTarget(t, extensions, /* PRG ADDITION BEGIN */ runtime.tools ? runtime.tools : {} /* PRG ADDITION END */));
+    const serializedTargets = flattenedOriginalTargets.map(t => serializeTarget(t, extensions));
 
     if (targetId) {
         return serializedTargets[0];
@@ -587,6 +587,7 @@ const serialize = function (runtime, targetId, /* PRG ADDITION BEGIN */ extensio
     /* PRG ADDITION BEGIN */
     // Save training data for the text classifier model
     obj.textModel = runtime.modelData ? runtime.modelData.classifierData : undefined;
+    obj.tools = runtime.tools ? runtime.tools : [];
     /* PRG ADDITION END */
 
     // Assemble metadata
